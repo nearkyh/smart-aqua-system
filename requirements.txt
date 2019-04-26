@@ -1,0 +1,14 @@
+tensorflow-gpu==1.9.0
+cython
+pillow
+lxml
+jupyter
+matplotlib
+opencv-python==3.4.0.12
+opencv-contrib-python==3.4.0.12
+pandas
+flask
+flask_bootstrap
+flask_moment
+pymysql
+pyqt5
