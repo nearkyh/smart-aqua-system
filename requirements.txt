@@ -12,3 +12,6 @@ flask_bootstrap
 flask_moment
 pymysql
 pyqt5
+pyinstaller
+pyqtgraph
+PyOpenGL

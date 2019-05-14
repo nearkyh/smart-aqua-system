@@ -5,42 +5,52 @@ from mpl_toolkits import mplot3d
 
 class Visualization3D:
 
-    def __init__(self, data_path, start_time, end_time):
-        self.data_path = data_path
-        self.start_time = start_time
-        self.end_time = end_time
+    def __init__(self):
+        self.coordinates_x = []
+        self.coordinates_y = []
+        self.depth = []
+        self.timestamp = []
+        self.frontCam_w = []
+        self.frontCam_h = []
+        self.sideCam_w = []
+        self.sideCam_h = []
 
-    def read_data(self):
-        prc = pd.read_csv(self.data_path)
-        return prc['coordinates_x'].tolist(), \
-               prc['coordinates_y'].tolist(), \
-               prc['depth'].tolist(), \
-               prc['timestamp'].tolist(), \
-               prc['frontCam_w'].tolist(), \
-               prc['frontCam_h'].tolist(), \
-               prc['sideCam_w'].tolist(), \
-               prc['sideCam_h'].tolist()
+    def read_data(self, data_path):
+        prc = pd.read_csv(data_path)
+        self.coordinates_x = prc['coordinates_x'].tolist()
+        self.coordinates_y = prc['coordinates_y'].tolist()
+        self.depth = prc['depth'].tolist()
+        self.timestamp = prc['timestamp'].tolist()
+        self.frontCam_w = prc['frontCam_w'].tolist()
+        self.frontCam_h = prc['frontCam_h'].tolist()
+        self.sideCam_w = prc['sideCam_w'].tolist()
+        self.sideCam_h = prc['sideCam_h'].tolist()
 
-    def set_time_zone(self, timestamp, x, y, depth):
-        start_day = self.start_time.split('.')[2]
-        start_hour = self.start_time.split('.')[3]
-        start_minute = self.start_time.split('.')[4]
-        start_second = self.start_time.split('.')[5]
+    def set_time_zone(self, start_time, end_time, timestamp, x, y, depth):
+        '''
+            Input shape (start_time, end_time)
+            start_time = 'Year.Month.Day.Hour.Minute.Second'
+            end_time = 'Year.Month.Day.Hour.Minute.Second'
+        '''
+        start_day = int(start_time.split('.')[2])
+        start_hour = int(start_time.split('.')[3])
+        start_minute = int(start_time.split('.')[4])
+        start_second = int(start_time.split('.')[5])
 
-        end_day = self.end_time.split('.')[2]
-        end_hour = self.end_time.split('.')[3]
-        end_minute = self.end_time.split('.')[4]
-        end_second = self.end_time.split('.')[5]
+        end_day = int(end_time.split('.')[2])
+        end_hour = int(end_time.split('.')[3])
+        end_minute = int(end_time.split('.')[4])
+        end_second = int(end_time.split('.')[5])
 
         list_x = []
         list_y = []
         list_depth = []
         for i in range(len(timestamp)):
             time = timestamp[i]
-            day = time.split('.')[2]
-            hour = time.split('.')[3]
-            minute = time.split('.')[4]
-            second = time.split('.')[5]
+            day = int(time.split('.')[2])
+            hour = int(time.split('.')[3])
+            minute = int(time.split('.')[4])
+            second = int(time.split('.')[5])
             if (start_day <= day) and (day <= end_day):
                 if (start_hour <= hour) and (hour <= end_hour):
                     if (start_minute <= minute) and (minute <= end_minute):
@@ -57,19 +67,13 @@ class Visualization3D:
         #     coordinates_x, coordinates_y, depth, history = read_data(save_dir='save_behavior_pattern',
         #                                                                   save_file=fileName)
 
-        coordinates_x, coordinates_y, depth, timestamp, frontCam_w, frontCam_h, sideCam_w, sideCam_h = self.read_data()
-        list_x, list_y, list_depth = self.set_time_zone(timestamp=timestamp,
-                                                        x=coordinates_x,
-                                                        y=coordinates_y,
-                                                        depth=depth)
-
         fig = plt.figure(figsize=(int((900 / 100 + 1) * 3 / 4), int((900 / 100 + 1) * 3 / 4)))
         ax = fig.add_subplot(111, projection='3d')
-        ax.scatter(list_x, list_y, list_depth, color='g', marker='.')
+        ax.scatter(self.coordinates_x, self.coordinates_y, self.depth, color='g', marker='.')
 
-        ax.set_xlim([0, frontCam_w[0]])
-        ax.set_ylim([0, sideCam_w[0]])
-        ax.set_zlim([frontCam_h[0], 0])
+        ax.set_xlim([0, self.frontCam_w[0]])
+        ax.set_ylim([0, self.sideCam_w[0]])
+        ax.set_zlim([self.frontCam_h[0], 0])
 
         ax.set_xlabel('front')
         ax.set_ylabel('depth')
@@ -80,11 +84,6 @@ class Visualization3D:
 
 if __name__ == '__main__':
 
-    '''
-        Input 'start time' and 'end time' shape
-        'Year.Month.Day.Hour.Minute.Second'
-    '''
-    vis3D = Visualization3D(data_path='save_behavior_pattern/save_0000.csv',
-                            start_time='2019.4.25.11.24.33',
-                            end_time='2019.4.25.11.24.34')
-    vis3D.run()
+    visualization3D = Visualization3D()
+    visualization3D.read_data('save_behavior_pattern/save_0000.csv')
+    visualization3D.run()

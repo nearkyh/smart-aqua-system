@@ -1,4 +1,4 @@
-# Smart Aquarium
+# Smart Aqua System
 Fish 3D tracking and abnormal behavior detection.
 
 
@@ -12,7 +12,7 @@ Fish 3D tracking and abnormal behavior detection.
 ## Getting Started
 Creating virtualenv
 ```bash
-$ cd Smart-Aquarium
+$ cd Smart-Aqua-System
 $ virtualenv env --python=python3.5
 $ source env/bin/activate
 ```
