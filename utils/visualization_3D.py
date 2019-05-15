@@ -85,5 +85,5 @@ class Visualization3D:
 if __name__ == '__main__':
 
     visualization3D = Visualization3D()
-    visualization3D.read_data('save_behavior_pattern/save_0000.csv')
+    visualization3D.read_data('save_pattern/20190514.csv')
     visualization3D.run()

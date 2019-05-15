@@ -45,11 +45,11 @@ class MyWindow(QMainWindow, form_class):
         # Init 3D Plotting
         self.axisX = 640
         self.axisY = 640
-        self.axisZ = 640.0
+        self.axisZ = 480.0
         self.initScale = {'x': int(self.axisX / 20), 'y': int(self.axisY / 20), 'z': 10}
         self.mapScale = {'x': 1, 'y': 1, 'z': 1}
         self.mapTranslate = {'dx': -int(self.axisX / 2) + 5, 'dy': -int(self.axisY / 2) + 5, 'dz': 5}
-        self.cameraPosition = self.axisX * 3 / 2
+        self.cameraPosition = self.axisX * 3
         self.init_3D_plotting()
 
         # Temp 3D Data
@@ -649,16 +649,53 @@ class MyWindow(QMainWindow, form_class):
             self.graphicsView.addItem(glg)
 
             # 3D Plotting
-            numData = 500
-            pos = np.empty((numData, 3))
-            size = np.empty((numData))
-            color = np.empty((numData, 4))
-            # for i in range(numData):
-            #     pos[i] = (randrange(0, self.axisX - 10),
-            #               randrange(0, self.axisY - 10),
-            #               randrange(0, self.axisZ - 10))
-            #     size[i] = 10
-            #     color[i] = (0.0, 1.0, 0.0, 1.0)
+            rectNumDataX = int(self.axisX * 4)
+            rectNumDataY = int(self.axisY * 4)
+            rectNumDataZ = int(self.axisZ * 4)
+            rectNumData = rectNumDataX+rectNumDataY+rectNumDataZ
+            rectColor = (1.0, 1.0, 1.0, 0.1)
+            pos = np.empty((rectNumData, 3))
+            size = np.empty((rectNumData))
+            color = np.empty((rectNumData, 4))
+            numDataX = int(self.axisX)
+            numDataY = int(self.axisY)
+            numDataZ = int(self.axisZ)
+            tempNumData = 0
+            for i in range(numDataX):
+                pos[i] = (i, 0, 0); size[i] = 10; color[i] =  rectColor
+            tempNumData += numDataX
+            for i in range(numDataY):
+                pos[i+tempNumData] = (0, i, 0); size[i+tempNumData] = 10; color[i+tempNumData] = rectColor
+            tempNumData += numDataY
+            for i in range(numDataZ):
+                pos[i+tempNumData] = (0, 0, i); size[i+tempNumData] = 10; color[i+tempNumData] = rectColor
+            tempNumData += numDataZ
+            for i in range(numDataY):
+                pos[i+tempNumData] = (self.axisX, i, 0); size[i+tempNumData] = 10; color[i+tempNumData] = rectColor
+            tempNumData += numDataY
+            for i in range(numDataZ):
+                pos[i+tempNumData] = (self.axisX, 0, i); size[i+tempNumData] = 10; color[i+tempNumData] = rectColor
+            tempNumData += numDataZ
+            for i in range(numDataX):
+                pos[i+tempNumData] = (i, self.axisY, 0); size[i+tempNumData] = 10; color[i+tempNumData] = rectColor
+            tempNumData += numDataX
+            for i in range(numDataZ):
+                pos[i+tempNumData] = (0, self.axisY, i); size[i+tempNumData] = 10; color[i+tempNumData] = rectColor
+            tempNumData += numDataZ
+            for i in range(numDataX):
+                pos[i+tempNumData] = (i, 0, self.axisZ); size[i+tempNumData] = 10; color[i+tempNumData] = rectColor
+            tempNumData += numDataX
+            for i in range(numDataY):
+                pos[i+tempNumData] = (0, i, self.axisZ); size[i+tempNumData] = 10; color[i+tempNumData] = rectColor
+            tempNumData += numDataY
+            for i in range(numDataZ):
+                pos[i+tempNumData] = (self.axisX, self.axisY, i); size[i+tempNumData] = 10; color[i+tempNumData] = rectColor
+            tempNumData += numDataZ
+            for i in range(numDataY):
+                pos[i+tempNumData] = (self.axisX, i, self.axisZ); size[i+tempNumData] = 10; color[i+tempNumData] = rectColor
+            tempNumData += numDataY
+            for i in range(numDataX):
+                pos[i+tempNumData] = (i, self.axisY, self.axisZ); size[i+tempNumData] = 10; color[i+tempNumData] = rectColor
 
             gsp = gl.GLScatterPlotItem(pos=pos, size=size, color=color, pxMode=False)
             gsp.scale(
@@ -715,9 +752,13 @@ class MyWindow(QMainWindow, form_class):
         color = np.empty((numData, 4))
 
         for i in range(numData):
-            pos[i] = (x[i],
-                      self.axisY - y[i],
-                      self.axisZ - depth[i])
+            # Real(3D Visualization) to OpenGL(3D Visualization)
+            # pos[i] = (x[i],
+            #           self.axisY - y[i],
+            #           self.axisZ - depth[i])
+            pos[i] = (self.axisX - depth[i],
+                      x[i],
+                      self.axisZ - y[i])
             size[i] = 10
             color[i] = (0.0, 1.0, 0.0, 1.0)
 
