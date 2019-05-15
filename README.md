@@ -1,6 +1,5 @@
 # Smart Aqua System
-Fish 3D tracking and abnormal behavior detection.
-
+Analysis tool for fish 3D tracking and abnormal behavior detection.
 
 ## Requirements
 - Ubuntu 16.04
@@ -17,14 +16,14 @@ $ virtualenv env --python=python3.5
 $ source env/bin/activate
 ```
 
-Install Dependencies
+Install dependencies
 ```bash
 $ sudo apt-get install mysql-server
 $ sudo apt-get install python3-tk
 $ pip install -r requirements.txt
 ```
 
-Run
+Demo
 ```bash
 $ python detector.py [input device]
 
@@ -36,10 +35,14 @@ $ python detector.py [input device]
     
   3. Using RealSense
     python detector.py realsense
-````
+```
 
-Monitoring System
+Monitoring system 
 ```bash
 $ python monitoring.py
-````
+```
 
+## Run analysis tool
+```bash
+$ python app.py
+```
