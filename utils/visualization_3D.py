@@ -9,6 +9,7 @@ class Visualization3D:
         self.coordinates_x = []
         self.coordinates_y = []
         self.depth = []
+        self.speed = []
         self.timestamp = []
         self.frontCam_w = []
         self.frontCam_h = []
@@ -20,6 +21,7 @@ class Visualization3D:
         self.coordinates_x = prc['coordinates_x'].tolist()
         self.coordinates_y = prc['coordinates_y'].tolist()
         self.depth = prc['depth'].tolist()
+        self.speed = prc['speed'].tolist()
         self.timestamp = prc['timestamp'].tolist()
         self.frontCam_w = prc['frontCam_w'].tolist()
         self.frontCam_h = prc['frontCam_h'].tolist()
@@ -54,10 +56,10 @@ class Visualization3D:
             if (start_day <= day) and (day <= end_day):
                 if (start_hour <= hour) and (hour <= end_hour):
                     if (start_minute <= minute) and (minute <= end_minute):
-                        if (start_second <= second) and (second <= end_second):
-                            list_x.append(x[i])
-                            list_y.append(y[i])
-                            list_depth.append(depth[i])
+                        # if (start_second <= second) and (second <= end_second):
+                        list_x.append(x[i])
+                        list_y.append(y[i])
+                        list_depth.append(depth[i])
 
         return list_x, list_y, list_depth
 

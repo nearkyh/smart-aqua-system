@@ -646,6 +646,16 @@ p, li { white-space: pre-wrap; }
        </property>
       </widget>
      </widget>
+     <widget class="QTableWidget" name="tableWidget_dataList">
+      <property name="geometry">
+       <rect>
+        <x>790</x>
+        <y>40</y>
+        <width>751</width>
+        <height>501</height>
+       </rect>
+      </property>
+     </widget>
     </widget>
    </widget>
   </widget>

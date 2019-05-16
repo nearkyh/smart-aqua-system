@@ -8,9 +8,9 @@ from datetime import datetime, timedelta
 from random import randrange
 
 from PyQt5.QtWidgets import QMainWindow, QApplication
-from PyQt5.QtWidgets import QFileDialog, QMessageBox
+from PyQt5.QtWidgets import QFileDialog, QMessageBox, QTableWidgetItem
 from PyQt5.QtGui import QImage, QPixmap, QFont
-from PyQt5.QtCore import QTimer, QTime, QDateTime, QRect
+from PyQt5.QtCore import QTimer, QTime, QDateTime, QRect, Qt
 from PyQt5 import uic
 
 import pyqtgraph as pg
@@ -49,7 +49,7 @@ class MyWindow(QMainWindow, form_class):
         self.initScale = {'x': int(self.axisX / 20), 'y': int(self.axisY / 20), 'z': 10}
         self.mapScale = {'x': 1, 'y': 1, 'z': 1}
         self.mapTranslate = {'dx': -int(self.axisX / 2) + 5, 'dy': -int(self.axisY / 2) + 5, 'dz': 5}
-        self.cameraPosition = self.axisX * 3
+        self.cameraPosition = self.axisX * 2.5
         self.init_3D_plotting()
 
         # Temp 3D Data
@@ -653,7 +653,8 @@ class MyWindow(QMainWindow, form_class):
             rectNumDataY = int(self.axisY * 4)
             rectNumDataZ = int(self.axisZ * 4)
             rectNumData = rectNumDataX+rectNumDataY+rectNumDataZ
-            rectColor = (1.0, 1.0, 1.0, 0.1)
+            rectColorWhite = (1.0, 1.0, 1.0, 0.1)
+            rectColorRed = (1.0, 0.0, 0.0, 0.1)
             pos = np.empty((rectNumData, 3))
             size = np.empty((rectNumData))
             color = np.empty((rectNumData, 4))
@@ -662,40 +663,40 @@ class MyWindow(QMainWindow, form_class):
             numDataZ = int(self.axisZ)
             tempNumData = 0
             for i in range(numDataX):
-                pos[i] = (i, 0, 0); size[i] = 10; color[i] =  rectColor
+                pos[i] = (i, 0, 0); size[i] = 10; color[i] =  rectColorRed
             tempNumData += numDataX
             for i in range(numDataY):
-                pos[i+tempNumData] = (0, i, 0); size[i+tempNumData] = 10; color[i+tempNumData] = rectColor
+                pos[i+tempNumData] = (0, i, 0); size[i+tempNumData] = 10; color[i+tempNumData] = rectColorRed
             tempNumData += numDataY
             for i in range(numDataZ):
-                pos[i+tempNumData] = (0, 0, i); size[i+tempNumData] = 10; color[i+tempNumData] = rectColor
+                pos[i+tempNumData] = (0, 0, i); size[i+tempNumData] = 10; color[i+tempNumData] = rectColorRed
             tempNumData += numDataZ
             for i in range(numDataY):
-                pos[i+tempNumData] = (self.axisX, i, 0); size[i+tempNumData] = 10; color[i+tempNumData] = rectColor
+                pos[i+tempNumData] = (self.axisX, i, 0); size[i+tempNumData] = 10; color[i+tempNumData] = rectColorWhite
             tempNumData += numDataY
             for i in range(numDataZ):
-                pos[i+tempNumData] = (self.axisX, 0, i); size[i+tempNumData] = 10; color[i+tempNumData] = rectColor
+                pos[i+tempNumData] = (self.axisX, 0, i); size[i+tempNumData] = 10; color[i+tempNumData] = rectColorWhite
             tempNumData += numDataZ
             for i in range(numDataX):
-                pos[i+tempNumData] = (i, self.axisY, 0); size[i+tempNumData] = 10; color[i+tempNumData] = rectColor
+                pos[i+tempNumData] = (i, self.axisY, 0); size[i+tempNumData] = 10; color[i+tempNumData] = rectColorWhite
             tempNumData += numDataX
             for i in range(numDataZ):
-                pos[i+tempNumData] = (0, self.axisY, i); size[i+tempNumData] = 10; color[i+tempNumData] = rectColor
+                pos[i+tempNumData] = (0, self.axisY, i); size[i+tempNumData] = 10; color[i+tempNumData] = rectColorWhite
             tempNumData += numDataZ
             for i in range(numDataX):
-                pos[i+tempNumData] = (i, 0, self.axisZ); size[i+tempNumData] = 10; color[i+tempNumData] = rectColor
+                pos[i+tempNumData] = (i, 0, self.axisZ); size[i+tempNumData] = 10; color[i+tempNumData] = rectColorWhite
             tempNumData += numDataX
             for i in range(numDataY):
-                pos[i+tempNumData] = (0, i, self.axisZ); size[i+tempNumData] = 10; color[i+tempNumData] = rectColor
+                pos[i+tempNumData] = (0, i, self.axisZ); size[i+tempNumData] = 10; color[i+tempNumData] = rectColorWhite
             tempNumData += numDataY
             for i in range(numDataZ):
-                pos[i+tempNumData] = (self.axisX, self.axisY, i); size[i+tempNumData] = 10; color[i+tempNumData] = rectColor
+                pos[i+tempNumData] = (self.axisX, self.axisY, i); size[i+tempNumData] = 10; color[i+tempNumData] = rectColorWhite
             tempNumData += numDataZ
             for i in range(numDataY):
-                pos[i+tempNumData] = (self.axisX, i, self.axisZ); size[i+tempNumData] = 10; color[i+tempNumData] = rectColor
+                pos[i+tempNumData] = (self.axisX, i, self.axisZ); size[i+tempNumData] = 10; color[i+tempNumData] = rectColorWhite
             tempNumData += numDataY
             for i in range(numDataX):
-                pos[i+tempNumData] = (i, self.axisY, self.axisZ); size[i+tempNumData] = 10; color[i+tempNumData] = rectColor
+                pos[i+tempNumData] = (i, self.axisY, self.axisZ); size[i+tempNumData] = 10; color[i+tempNumData] = rectColorWhite
 
             gsp = gl.GLScatterPlotItem(pos=pos, size=size, color=color, pxMode=False)
             gsp.scale(
@@ -782,6 +783,7 @@ class MyWindow(QMainWindow, form_class):
             fileFormat = dataName.split('.')[-1]
             if fileFormat == 'csv':
                 self.set_3D_plotting(dataPath[0])
+                self.set_data_table()
             elif fileFormat == '':
                 pass
             else:
@@ -822,6 +824,39 @@ class MyWindow(QMainWindow, form_class):
         except Exception as e:
             print("[load_visualization] \n", e)
             pass
+
+
+    def set_data_table(self):
+        column_headers = ['x\n(frontW)', 'y\n(frontH)', 'depth\n(sideW)',
+                          'speed\n(mm/s)', 'timestamp\n(y.M.d.h.m.s)',
+                          'frontCam_w', 'frontCam_h', 'sideCam_w', 'sideCam_h']
+        coordinates_x = self.vis3D.coordinates_x
+        coordinates_y = self.vis3D.coordinates_y
+        depth = self.vis3D.depth
+        speed = self.vis3D.speed
+        timestamp = self.vis3D.timestamp
+        frontCam_w = self.vis3D.frontCam_w
+        frontCam_h = self.vis3D.frontCam_h
+        sideCam_w = self.vis3D.sideCam_w
+        sideCam_h = self.vis3D.sideCam_h
+
+        self.tableWidget_dataList.setRowCount(len(coordinates_x))
+        self.tableWidget_dataList.setColumnCount(len(column_headers))
+        self.tableWidget_dataList.setHorizontalHeaderLabels(column_headers)
+
+        for idx in range(len(coordinates_x)):
+            self.tableWidget_dataList.setItem(idx, 0, QTableWidgetItem(str(coordinates_x[idx])))
+            self.tableWidget_dataList.setItem(idx, 1, QTableWidgetItem(str(coordinates_y[idx])))
+            self.tableWidget_dataList.setItem(idx, 2, QTableWidgetItem(str(depth[idx])))
+            self.tableWidget_dataList.setItem(idx, 3, QTableWidgetItem(str(speed[idx])))
+            self.tableWidget_dataList.setItem(idx, 4, QTableWidgetItem(str(timestamp[idx])))
+            self.tableWidget_dataList.setItem(idx, 5, QTableWidgetItem(str(frontCam_w[idx])))
+            self.tableWidget_dataList.setItem(idx, 6, QTableWidgetItem(str(frontCam_h[idx])))
+            self.tableWidget_dataList.setItem(idx, 7, QTableWidgetItem(str(sideCam_w[idx])))
+            self.tableWidget_dataList.setItem(idx, 8, QTableWidgetItem(str(sideCam_h[idx])))
+
+        self.tableWidget_dataList.resizeColumnsToContents()
+        self.tableWidget_dataList.resizeRowsToContents()
 
 
 if __name__ == "__main__":
