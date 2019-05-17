@@ -218,7 +218,7 @@
       <property name="title">
        <string>Camera</string>
       </property>
-      <widget class="QPushButton" name="btn_camera_disconnect">
+      <widget class="QPushButton" name="btn_camera_connect">
        <property name="geometry">
         <rect>
          <x>10</x>
@@ -231,10 +231,10 @@
         <string notr="true"/>
        </property>
        <property name="text">
-        <string>Disconnect</string>
+        <string>Connect</string>
        </property>
       </widget>
-      <widget class="QPushButton" name="btn_camera_connect">
+      <widget class="QPushButton" name="btn_camera_disconnect">
        <property name="geometry">
         <rect>
          <x>110</x>
@@ -247,7 +247,7 @@
         <string notr="true"/>
        </property>
        <property name="text">
-        <string>Connect</string>
+        <string>Disconnect</string>
        </property>
       </widget>
      </widget>
@@ -255,7 +255,7 @@
       <property name="geometry">
        <rect>
         <x>20</x>
-        <y>110</y>
+        <y>280</y>
         <width>211</width>
         <height>261</height>
        </rect>
@@ -534,6 +534,120 @@ p, li { white-space: pre-wrap; }
        </property>
       </widget>
      </widget>
+     <widget class="QGroupBox" name="groupBox_setVideo">
+      <property name="geometry">
+       <rect>
+        <x>20</x>
+        <y>110</y>
+        <width>211</width>
+        <height>151</height>
+       </rect>
+      </property>
+      <property name="title">
+       <string>Video</string>
+      </property>
+      <widget class="QPushButton" name="btn_front_video">
+       <property name="geometry">
+        <rect>
+         <x>160</x>
+         <y>30</y>
+         <width>41</width>
+         <height>31</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>. . .</string>
+       </property>
+      </widget>
+      <widget class="QLabel" name="label_front_video">
+       <property name="geometry">
+        <rect>
+         <x>10</x>
+         <y>30</y>
+         <width>141</width>
+         <height>31</height>
+        </rect>
+       </property>
+       <property name="whatsThis">
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">background-color: rgb(236, 236, 236);</string>
+       </property>
+       <property name="text">
+        <string>  Front video</string>
+       </property>
+      </widget>
+      <widget class="QLabel" name="label_side_video">
+       <property name="geometry">
+        <rect>
+         <x>10</x>
+         <y>70</y>
+         <width>141</width>
+         <height>31</height>
+        </rect>
+       </property>
+       <property name="whatsThis">
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">background-color: rgb(236, 236, 236);</string>
+       </property>
+       <property name="text">
+        <string>  Side video</string>
+       </property>
+      </widget>
+      <widget class="QPushButton" name="btn_side_video">
+       <property name="geometry">
+        <rect>
+         <x>160</x>
+         <y>70</y>
+         <width>41</width>
+         <height>31</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>. . .</string>
+       </property>
+      </widget>
+      <widget class="QPushButton" name="btn_video_connect">
+       <property name="geometry">
+        <rect>
+         <x>10</x>
+         <y>110</y>
+         <width>91</width>
+         <height>31</height>
+        </rect>
+       </property>
+       <property name="styleSheet">
+        <string notr="true"/>
+       </property>
+       <property name="text">
+        <string>Connect</string>
+       </property>
+      </widget>
+      <widget class="QPushButton" name="btn_video_disconnect">
+       <property name="geometry">
+        <rect>
+         <x>110</x>
+         <y>110</y>
+         <width>91</width>
+         <height>31</height>
+        </rect>
+       </property>
+       <property name="styleSheet">
+        <string notr="true"/>
+       </property>
+       <property name="text">
+        <string>Disconnect</string>
+       </property>
+      </widget>
+     </widget>
+     <zorder>widget_camera_2</zorder>
+     <zorder>groupBox_setCamera</zorder>
+     <zorder>groupBox_setFrameMatch</zorder>
+     <zorder>groupBox_setVideo</zorder>
+     <zorder>widget_camera</zorder>
     </widget>
     <widget class="QWidget" name="tab_visualization">
      <attribute name="title">

@@ -64,9 +64,19 @@ class MyWindow(QMainWindow, form_class):
         self.timer.timeout.connect(self.main_viewer)
 
         # Set click function for camera control
+        self.frontCamIndex = 2
+        self.sideCamIndex = 5
         self.btn_camera_connect.clicked.connect(self.camera_connect)
         self.btn_camera_disconnect.clicked.connect(self.camera_disconnect)
         self.btn_matching.clicked.connect(self.matching_frame_size)
+
+        # Set click function for video control
+        self.front_video = ''
+        self.side_video = ''
+        self.btn_front_video.clicked.connect(self.set_front_video)
+        self.btn_side_video.clicked.connect(self.set_side_video)
+        self.btn_video_connect.clicked.connect(self.video_connect)
+        self.btn_video_disconnect.clicked.connect(self.video_disconnect)
 
         # Set click function for 3D Visualization
         self.btn_3D_data_path.clicked.connect(self.load_3D_data)
@@ -518,40 +528,45 @@ class MyWindow(QMainWindow, form_class):
 
 
     def camera_connect(self):
-        if not self.timer.isActive():
-            # Create camera capture
-            self.leftCam = cv2.VideoCapture('frontCam.avi')
-            self.rightCam = cv2.VideoCapture('sideCam.avi')
+        try:
+            if not self.timer.isActive():
+                # Create camera capture
+                self.leftCam = cv2.VideoCapture(self.frontCamIndex)
+                self.rightCam = cv2.VideoCapture(self.sideCamIndex)
 
-            # Resize frame to match the size of the fish-tank
-            if self.check_calibration == True:
-                cropWidth = 960
-                camera_calibration = CameraCalibration(cap1=self.leftCam,
-                                                       cap2=self.rightCam,
-                                                       camWidth=self.lCamWidth,
-                                                       camHeight=self.lCamHeight,
-                                                       cropWidth=cropWidth)
-                camera_calibration.set_stereoMatcher()
-                '''
-                    The distortion in the leftCam and rightCam edges prevents a good calibration,
-                    so discard the edges
-                '''
-                camera_calibration.set_resolution(cap=self.leftCam)
-                camera_calibration.set_resolution(cap=self.rightCam)
-            elif self.check_calibration == False:
-                self.lCamWidth = int(self.leftCam.get(cv2.CAP_PROP_FRAME_WIDTH))
-                self.lCamHeight = int(self.leftCam.get(cv2.CAP_PROP_FRAME_HEIGHT))
-                self.rCamWidth = int(self.rightCam.get(cv2.CAP_PROP_FRAME_WIDTH))
-                self.rCamHeight = int(self.rightCam.get(cv2.CAP_PROP_FRAME_HEIGHT))
-            self.lCamWidth = self.lCamWidth - (self.lCropLeft + self.lCropRight)
-            self.lCamHeight = self.lCamHeight - (self.lCropUpper + self.lCropBottom)
-            self.rCamWidth = self.rCamWidth - (self.rCropLeft + self.rCropRight)
-            self.rCamHeight = self.rCamHeight - (self.rCropUpper + self.rCropBottom)
+                # Resize frame to match the size of the fish-tank
+                if self.check_calibration == True:
+                    cropWidth = 960
+                    camera_calibration = CameraCalibration(cap1=self.leftCam,
+                                                           cap2=self.rightCam,
+                                                           camWidth=self.lCamWidth,
+                                                           camHeight=self.lCamHeight,
+                                                           cropWidth=cropWidth)
+                    camera_calibration.set_stereoMatcher()
+                    '''
+                        The distortion in the leftCam and rightCam edges prevents a good calibration,
+                        so discard the edges
+                    '''
+                    camera_calibration.set_resolution(cap=self.leftCam)
+                    camera_calibration.set_resolution(cap=self.rightCam)
+                elif self.check_calibration == False:
+                    self.lCamWidth = int(self.leftCam.get(cv2.CAP_PROP_FRAME_WIDTH))
+                    self.lCamHeight = int(self.leftCam.get(cv2.CAP_PROP_FRAME_HEIGHT))
+                    self.rCamWidth = int(self.rightCam.get(cv2.CAP_PROP_FRAME_WIDTH))
+                    self.rCamHeight = int(self.rightCam.get(cv2.CAP_PROP_FRAME_HEIGHT))
+                self.lCamWidth = self.lCamWidth - (self.lCropLeft + self.lCropRight)
+                self.lCamHeight = self.lCamHeight - (self.lCropUpper + self.lCropBottom)
+                self.rCamWidth = self.rCamWidth - (self.rCropLeft + self.rCropRight)
+                self.rCamHeight = self.rCamHeight - (self.rCropUpper + self.rCropBottom)
 
-            # Start timer
-            self.timer.start(2)
-            # Update btn_camera_connect text
-            self.btn_camera_connect.setText("Running . . .")
+                # Start timer
+                self.timer.start(2)
+                # Update btn_camera_connect text
+                self.btn_camera_connect.setText("Running . . .")
+
+        except Exception as e:
+            print("[camera_connect] \n", e)
+            pass
 
 
     def camera_disconnect(self):
@@ -564,6 +579,98 @@ class MyWindow(QMainWindow, form_class):
             self.leftCam.release()
             self.rightCam.release()
             self.btn_camera_connect.setText("Connect")
+
+
+    def video_connect(self):
+        try:
+            if not self.timer.isActive():
+                # Create camera capture
+                self.leftCam = cv2.VideoCapture(self.front_video)
+                self.rightCam = cv2.VideoCapture(self.side_video)
+
+                # Resize frame to match the size of the fish-tank
+                if self.check_calibration == True:
+                    cropWidth = 960
+                    camera_calibration = CameraCalibration(cap1=self.leftCam,
+                                                           cap2=self.rightCam,
+                                                           camWidth=self.lCamWidth,
+                                                           camHeight=self.lCamHeight,
+                                                           cropWidth=cropWidth)
+                    camera_calibration.set_stereoMatcher()
+                    '''
+                        The distortion in the leftCam and rightCam edges prevents a good calibration,
+                        so discard the edges
+                    '''
+                    camera_calibration.set_resolution(cap=self.leftCam)
+                    camera_calibration.set_resolution(cap=self.rightCam)
+                elif self.check_calibration == False:
+                    self.lCamWidth = int(self.leftCam.get(cv2.CAP_PROP_FRAME_WIDTH))
+                    self.lCamHeight = int(self.leftCam.get(cv2.CAP_PROP_FRAME_HEIGHT))
+                    self.rCamWidth = int(self.rightCam.get(cv2.CAP_PROP_FRAME_WIDTH))
+                    self.rCamHeight = int(self.rightCam.get(cv2.CAP_PROP_FRAME_HEIGHT))
+                self.lCamWidth = self.lCamWidth - (self.lCropLeft + self.lCropRight)
+                self.lCamHeight = self.lCamHeight - (self.lCropUpper + self.lCropBottom)
+                self.rCamWidth = self.rCamWidth - (self.rCropLeft + self.rCropRight)
+                self.rCamHeight = self.rCamHeight - (self.rCropUpper + self.rCropBottom)
+
+                # Start timer
+                self.timer.start(2)
+                # Update btn_camera_connect text
+                self.btn_video_connect.setText("Running . . .")
+
+        except Exception as e:
+            print("[video_connect] \n", e)
+            pass
+
+
+    def video_disconnect(self):
+        if self.timer.isActive():
+            self.widget_camera.setPixmap(QPixmap.fromImage(QImage()))
+            self.widget_camera_2.setPixmap(QPixmap.fromImage(QImage()))
+            # Stop timer
+            self.timer.stop()
+            # Release camera capture
+            self.leftCam.release()
+            self.rightCam.release()
+            self.btn_video_connect.setText("Connect")
+
+
+    def set_front_video(self):
+        try:
+            videoPath = QFileDialog.getOpenFileName(None,
+                                                    caption='Load Your Front Video')
+            videoName = videoPath[0].split('/')[-1]
+            fileFormat = videoPath[0].split('/')[-1].split('.')[-1]
+            if (fileFormat == 'avi') or (fileFormat == 'mp4'):
+                self.front_video = videoName
+                self.label_front_video.setText('  ' + videoName)
+            elif fileFormat == '':
+                pass
+            else:
+                QMessageBox.about(None, "Error", "Please select a model.")
+
+        except Exception as e:
+            print("[set_model] \n", e)
+            pass
+
+
+    def set_side_video(self):
+        try:
+            videoPath = QFileDialog.getOpenFileName(None,
+                                                    caption='Load Your Side Video')
+            videoName = videoPath[0].split('/')[-1]
+            fileFormat = videoPath[0].split('/')[-1].split('.')[-1]
+            if (fileFormat == 'avi') or (fileFormat == 'mp4'):
+                self.side_video = videoName
+                self.label_side_video.setText('  ' + videoName)
+            elif fileFormat == '':
+                pass
+            else:
+                QMessageBox.about(None, "Error", "Please select a model.")
+
+        except Exception as e:
+            print("[set_model] \n", e)
+            pass
 
 
     def matching_frame_size(self):
@@ -589,7 +696,6 @@ class MyWindow(QMainWindow, form_class):
             fileFormat = modelPath[0].split('/')[-1].split('.')[-1]
             if fileFormat == 'pb':
                 self.model = modelName
-                self.label_model_path.setText(self.model)
                 self.label_model_path.setText('  ' + self.model)
             elif fileFormat == '':
                 pass
@@ -610,7 +716,6 @@ class MyWindow(QMainWindow, form_class):
             fileFormat = labelName.split('.')[-1]
             if fileFormat == 'pbtxt':
                 self.label = labelName
-                self.label_label_path.setText(self.label)
                 self.label_label_path.setText("  " + self.label)
             elif fileFormat == '':
                 pass
