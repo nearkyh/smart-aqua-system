@@ -7,21 +7,7 @@ __pycache__/
 
 object_detection/__pycache__/
 
-object_detection/anchor_generators/__pycache__/
-
-object_detection/box_coders/__pycache__/
-
-object_detection/builders/__pycache__/
-
 object_detection/core/__pycache__/
-
-object_detection/data_decoders/__pycache__/
-
-object_detection/matchers/__pycache__/
-
-object_detection/meta_architectures/__pycache__/
-
-object_detection/models/__pycache__/
 
 object_detection/protos/__pycache__/
 
