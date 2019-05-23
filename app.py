@@ -3,7 +3,7 @@ import cv2
 import pandas as pd
 import os
 import sys
-from time import time
+from time import time, sleep
 from datetime import datetime, timedelta
 from random import randrange
 
@@ -81,6 +81,12 @@ class MyWindow(QMainWindow, form_class):
         # Set click function for 3D Visualization
         self.btn_3D_data_path.clicked.connect(self.load_3D_data)
         self.btn_load_visualization.clicked.connect(self.load_visualization)
+        # Set click function for 3D Animation
+        self.btn_run_animation.clicked.connect(self.run_animation)
+        self.btn_stop_animation.clicked.connect(self.stop_animation)
+        self.ani_x = []
+        self.ani_y = []
+        self.ani_depth = []
 
         # Set click function for Fish Detection
         self.btn_model_path.clicked.connect(self.set_model)
@@ -95,12 +101,12 @@ class MyWindow(QMainWindow, form_class):
         self.dateTimeEdit_end.setDateTime(QDateTime.currentDateTime())
 
         # Set model for fish detection
-        self.model = 'rfcn_resnet101_aquarium_fish_v2_22751'
+        self.model = 'rfcn_resnet101_angelfish_40000'
         self.label_model_path.setText("  " + self.model)
         # self.label_model_path.setFont(QFont('Arial', 10))
-        self.label = 'aquarium_fish_v2_label_map.pbtxt'
+        self.label = 'angelfish_label_map.pbtxt'
         self.label_label_path.setText("  " + self.label)
-        self.num_classes = 3
+        self.num_classes = 1
         self.spinBox_num_class.setValue(self.num_classes)
         self.spinBox_num_class.valueChanged.connect(self.set_num_classes)
 
@@ -638,7 +644,8 @@ class MyWindow(QMainWindow, form_class):
     def set_front_video(self):
         try:
             videoPath = QFileDialog.getOpenFileName(None,
-                                                    caption='Load Your Front Video')
+                                                    caption='Load Your Front Video',
+                                                    directory='./')
             videoName = videoPath[0].split('/')[-1]
             fileFormat = videoPath[0].split('/')[-1].split('.')[-1]
             if (fileFormat == 'avi') or (fileFormat == 'mp4'):
@@ -647,7 +654,7 @@ class MyWindow(QMainWindow, form_class):
             elif fileFormat == '':
                 pass
             else:
-                QMessageBox.about(None, "Error", "Please select a model.")
+                QMessageBox.about(None, "Error", "Please select a front video.")
 
         except Exception as e:
             print("[set_model] \n", e)
@@ -657,7 +664,8 @@ class MyWindow(QMainWindow, form_class):
     def set_side_video(self):
         try:
             videoPath = QFileDialog.getOpenFileName(None,
-                                                    caption='Load Your Side Video')
+                                                    caption='Load Your Side Video',
+                                                    directory='./')
             videoName = videoPath[0].split('/')[-1]
             fileFormat = videoPath[0].split('/')[-1].split('.')[-1]
             if (fileFormat == 'avi') or (fileFormat == 'mp4'):
@@ -666,7 +674,7 @@ class MyWindow(QMainWindow, form_class):
             elif fileFormat == '':
                 pass
             else:
-                QMessageBox.about(None, "Error", "Please select a model.")
+                QMessageBox.about(None, "Error", "Please select a side video.")
 
         except Exception as e:
             print("[set_model] \n", e)
@@ -962,6 +970,57 @@ class MyWindow(QMainWindow, form_class):
 
         self.tableWidget_dataList.resizeColumnsToContents()
         self.tableWidget_dataList.resizeRowsToContents()
+
+
+    def update_animation(self):
+        x = self.vis3D.coordinates_x
+        y = self.vis3D.coordinates_y
+        depth = self.vis3D.depth
+        i = 0
+        while i < len(x):
+            # sleep(5)
+            yield x[i], y[i], depth[i]
+            i += 1
+
+
+    def run_animation(self):
+        if self.label_3D_data_path.text() == '  ' + 'Choose data':
+            QMessageBox.about(None, "Error", "Please select a csv file.")
+        elif self.label_3D_data_path.text() == '  ':
+            QMessageBox.about(None, "Error", "Please select a csv file.")
+
+        for i in self.update_animation():
+            self.ani_x.append(i[0])
+            self.ani_y.append(i[1])
+            self.ani_depth.append(i[2])
+            print(self.ani_depth)
+            del self.graphicsView.items[2:]
+            self.update_3D_plotting(
+                x=self.ani_x,
+                y=self.ani_y,
+                depth=self.ani_depth)
+
+        # x = self.vis3D.coordinates_x
+        # y = self.vis3D.coordinates_y
+        # depth = self.vis3D.depth
+        # for i in range(len(x)):
+        #     self.ani_x.append(x[i])
+        #     self.ani_y.append(y[i])
+        #     self.ani_depth.append(depth[i])
+        #     print(self.ani_x)
+        #     del self.graphicsView.items[2:]
+        #     self.update_3D_plotting(
+        #         x=self.ani_x,
+        #         y=self.ani_y,
+        #         depth=self.ani_depth)
+        #     sleep(1)
+        #
+
+        self.timer.start(1000)
+
+
+    def stop_animation(self):
+        self.timer.stop()
 
 
 if __name__ == "__main__":
