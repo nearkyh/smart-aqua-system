@@ -665,7 +665,7 @@ p, li { white-space: pre-wrap; }
       <property name="title">
        <string>3D Visualization</string>
       </property>
-      <widget class="QPushButton" name="btn_load_visualization">
+      <widget class="QPushButton" name="btn_load_section">
        <property name="geometry">
         <rect>
          <x>10</x>
@@ -746,7 +746,7 @@ p, li { white-space: pre-wrap; }
         </rect>
        </property>
       </widget>
-      <widget class="QPushButton" name="btn_3D_data_path">
+      <widget class="QPushButton" name="btn_load_csv_file">
        <property name="geometry">
         <rect>
          <x>160</x>
