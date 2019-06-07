@@ -15,6 +15,7 @@ from PyQt5 import uic
 
 import pyqtgraph as pg
 import pyqtgraph.opengl as gl
+import pyqtgraph.exporters
 
 from utils.object_detection import ObjectDetection
 from utils.frame_rate import FrameRate
@@ -24,6 +25,7 @@ from utils.abnormal_behavior_detection import AbnormalBehaviorDetection
 from utils.abnormal_behavior_detection import RangeOfAbnormalBehaviorDetection
 from utils.db_connector import DBConnector
 from utils.visualization_3D import Visualization3D
+from utils.video_recorder import VideoRecorder
 
 
 form_class = uic.loadUiType("main_window.ui")[0]
@@ -66,6 +68,11 @@ class MyWindow(QMainWindow, form_class):
         self.btn_camera_connect.clicked.connect(self.camera_connect)
         self.btn_camera_disconnect.clicked.connect(self.camera_disconnect)
         self.btn_matching.clicked.connect(self.matching_frame_size)
+
+        # 녹화 기능 설정
+        self.btn_rec.clicked.connect(self.rec)
+        self.btn_rec_stop.clicked.connect(self.rec_stop)
+
         # 비디오 컨트롤 기능 설정
         self.front_video = ''
         self.side_video = ''
@@ -89,6 +96,9 @@ class MyWindow(QMainWindow, form_class):
         self.reset_action = QAction("reset", self.tableWidget_dataList)
         self.tableWidget_dataList.addAction(self.reset_action)
         self.reset_action.triggered.connect(self.selected_data_reset)
+
+        # 3D 시각화 이미지 캡쳐
+        self.btn_capture.clicked.connect(self.capture_vis)
 
         # 관상어 인식을 위한 모델 및 라벨, 개체수에 대한 설정 기능
         self.btn_model_path.clicked.connect(self.set_model)
@@ -125,6 +135,10 @@ class MyWindow(QMainWindow, form_class):
         self.lCamHeight = 720   # Y
         self.rCamWidth = 1280   # Depth
         self.rCamHeight = 720
+
+        # 비디오 녹화를 위한 변수 초기화
+        self.videoRecorder = None
+        self.recording = None
 
         # 수조 크기에 맞게 카메라 입력 프레임 리사이즈
         self.check_calibration = False
@@ -526,6 +540,12 @@ class MyWindow(QMainWindow, form_class):
             self.widget_camera.setPixmap(QPixmap.fromImage(qImg))
             self.widget_camera_2.setPixmap(QPixmap.fromImage(qImg2))
 
+            # Record Video
+            if (self.videoRecorder and self.recording) != None:
+                rec_frame = cv2.hconcat([fixLeftFrame, fixRightFrame])
+                self.videoRecorder.output(frame=rec_frame,
+                                          recording=self.recording)
+
         except Exception as e:
             print("[monitoring]\n", e)
             pass
@@ -566,7 +586,7 @@ class MyWindow(QMainWindow, form_class):
                 # Start timer
                 self.timer.start(2)
                 # Update btn_camera_connect text
-                self.btn_camera_connect.setText("Running . . .")
+                self.btn_camera_connect.setText("Running...")
 
         except Exception as e:
             print("[camera_connect] \n", e)
@@ -583,6 +603,20 @@ class MyWindow(QMainWindow, form_class):
             self.leftCam.release()
             self.rightCam.release()
             self.btn_camera_connect.setText("Connect")
+
+
+    def rec(self):
+        self.videoRecorder = VideoRecorder(fileName='video',
+                                           width=self.lCamWidth + self.rCamWidth,
+                                           height=self.lCamHeight)
+        self.recording = self.videoRecorder.recording()
+        self.btn_rec.setText("Recording...")
+
+
+    def rec_stop(self):
+        self.VideoRecorder = None
+        self.recording = None
+        self.btn_rec.setText("REC")
 
 
     def video_connect(self):
@@ -620,7 +654,7 @@ class MyWindow(QMainWindow, form_class):
                 # Start timer
                 self.timer.start(2)
                 # Update btn_camera_connect text
-                self.btn_video_connect.setText("Running . . .")
+                self.btn_video_connect.setText("Running...")
 
         except Exception as e:
             print("[video_connect] \n", e)
@@ -1027,6 +1061,21 @@ class MyWindow(QMainWindow, form_class):
                 z=self.vis3D.depth)
         except Exception as e:
             print("[selected_data_reset] \n", e)
+            pass
+
+
+    def capture_vis(self):
+        try:
+            dataPath = QFileDialog.getSaveFileName(None,
+                                                   caption='Capture image path',
+                                                   directory='./capture_img')
+            filePath = dataPath[0]
+            if filePath.split('.')[-1] == 'png':
+                filePath = filePath.split('.')[0]
+            self.graphicsView.grabFrameBuffer().save('{}.png'.format(filePath))
+
+        except Exception as e:
+            print("[capture_vis] \n", e)
             pass
 
 

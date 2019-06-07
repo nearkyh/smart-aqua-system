@@ -1,10 +1,13 @@
 # Smart Aqua System
 Analysis tool for fish 3D tracking and abnormal behavior detection.
 
+
 ## Requirements
 - Ubuntu 16.04
 - Python 3.5
-- TensorFlow 1.9
+- [TensorFlow-GPU 1.9](https://www.tensorflow.org/install)
+- [CUDA 9.0](https://developer.nvidia.com/cuda-downloads)
+- [cuDNN 7.1.4](https://developer.nvidia.com/cudnn)
 - OpenCV 3.4
 
 
@@ -41,6 +44,7 @@ Monitoring system
 ```bash
 $ python monitoring.py
 ```
+
 
 ## Run analysis tool
 ```bash
