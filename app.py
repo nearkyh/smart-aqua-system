@@ -15,17 +15,15 @@ from PyQt5 import uic
 
 import pyqtgraph as pg
 import pyqtgraph.opengl as gl
-import pyqtgraph.exporters
 
 from utils.object_detection import ObjectDetection
+from utils.visualization_3D import Visualization3D
 from utils.frame_rate import FrameRate
 from utils.video_recorder import VideoRecorder
 from utils.camera_calibration import CameraCalibration
 from utils.abnormal_behavior_detection import AbnormalBehaviorDetection
 from utils.abnormal_behavior_detection import RangeOfAbnormalBehaviorDetection
 from utils.db_connector import DBConnector
-from utils.visualization_3D import Visualization3D
-from utils.video_recorder import VideoRecorder
 
 
 form_class = uic.loadUiType("main_window.ui")[0]
@@ -54,13 +52,15 @@ class MyWindow(QMainWindow, form_class):
         self.init_3D_scatter()
         # 3D Scatter 입력 데이터 초기화
         self.pos = None
-        self.size = None
-        self.color = None
+        self.scatter_size = None
+        self.scatter_color = None
+        self.line_size = None
+        self.line_color = None
 
         # 타이머 생성
         self.timer = QTimer()
         # 타임아웃 콜백 설정
-        self.timer.timeout.connect(self.monitoring)
+        self.timer.timeout.connect(self.detector)
 
         # 카메라 컨트롤 기능 설정
         self.frontCamIndex = 2
@@ -96,6 +96,11 @@ class MyWindow(QMainWindow, form_class):
         self.reset_action = QAction("reset", self.tableWidget_dataList)
         self.tableWidget_dataList.addAction(self.reset_action)
         self.reset_action.triggered.connect(self.selected_data_reset)
+        # Smooth 적용 (Scatter Plot --> Line Plot)
+        self.smooth_mode = 'scatter'    # Available modes('scatter', 'line')
+        self.btn_apply_line.clicked.connect(self.apply_line)
+        self.btn_apply_scatter.clicked.connect(self.apply_scatter)
+        self.btn_apply_reset.clicked.connect(self.apply_reset)
 
         # 3D 시각화 이미지 캡쳐
         self.btn_capture.clicked.connect(self.capture_vis)
@@ -168,7 +173,7 @@ class MyWindow(QMainWindow, form_class):
         self.queue_of_speed = [] * self.queue_size_of_speed
 
 
-    def monitoring(self):
+    def detector(self):
         try:
             ret, leftFrame = self.leftCam.read()
             ret, rightFrame = self.rightCam.read()
@@ -264,6 +269,7 @@ class MyWindow(QMainWindow, form_class):
                     range_y=abnormal_behavior_size_y,
                     leftCam_object_point=l_object_point,
                     rightCam_object_point=r_object_point)
+
             except Exception as e:
                 print("[error code] init RangeOfABD\n", e)
                 pass
@@ -547,7 +553,7 @@ class MyWindow(QMainWindow, form_class):
                                           recording=self.recording)
 
         except Exception as e:
-            print("[monitoring]\n", e)
+            print("[detector]\n", e)
             pass
 
 
@@ -844,80 +850,186 @@ class MyWindow(QMainWindow, form_class):
                 pos[i+tempNumData] = (i, self.axisY, self.axisZ); size[i+tempNumData] = 10; color[i+tempNumData] = rectColorWhite
 
             gsp = gl.GLScatterPlotItem(pos=pos, size=size, color=color, pxMode=False)
-            gsp.scale(
-                x=self.mapScale['x'],
-                y=self.mapScale['y'],
-                z=self.mapScale['z'])
+            gsp.scale(x=self.mapScale['x'],
+                      y=self.mapScale['y'],
+                      z=self.mapScale['z'])
             gsp.translate(dx=self.mapTranslate['dx'],
-                dy=self.mapTranslate['dy'],
-                dz=self.mapTranslate['dz'])
+                          dy=self.mapTranslate['dy'],
+                          dz=self.mapTranslate['dz'])
             self.graphicsView.addItem(gsp)
 
         except Exception as e:
-            print("[init_3D_surface] \n", e)
+            print("[init_3D_scatter] \n", e)
             pass
 
 
     def set_3D_scatter(self, dataPath):
-        self.vis3D.read_data(data_path=dataPath)
-        # csv 파일 데이터에 대한 start time 및 end time 적용
-        start_time = self.vis3D.timestamp[0]
-        start_time = start_time.split('.')
-        end_time = self.vis3D.timestamp[-1]
-        end_time = end_time.split('.')
-        self.dateTimeEdit_start.setDateTime(QDateTime(
-            int(start_time[0]),
-            int(start_time[1]),
-            int(start_time[2]),
-            int(start_time[3]),
-            int(start_time[4]),
-            int(start_time[5])))
-        self.dateTimeEdit_end.setDateTime(QDateTime(
-            int(end_time[0]),
-            int(end_time[1]),
-            int(end_time[2]),
-            int(end_time[3]),
-            int(end_time[4]),
-            int(end_time[5])))
-        # 3D 좌표 사이즈 설정
-        self.axisX = int(self.vis3D.frontCam_w[-1])
-        self.axisY = int(self.vis3D.sideCam_w[-1])
-        self.axisZ = float(self.vis3D.frontCam_h[-1])
+        try:
+            self.vis3D.read_data(data_path=dataPath)
+            # csv 파일 데이터에 대한 start time 및 end time 적용
+            start_time = self.vis3D.timestamp[0]
+            start_time = start_time.split('.')
+            end_time = self.vis3D.timestamp[-1]
+            end_time = end_time.split('.')
+            self.dateTimeEdit_start.setDateTime(QDateTime(
+                int(start_time[0]),
+                int(start_time[1]),
+                int(start_time[2]),
+                int(start_time[3]),
+                int(start_time[4]),
+                int(start_time[5])))
+            self.dateTimeEdit_end.setDateTime(QDateTime(
+                int(end_time[0]),
+                int(end_time[1]),
+                int(end_time[2]),
+                int(end_time[3]),
+                int(end_time[4]),
+                int(end_time[5])))
 
-        self.load_3D_scatter(
-            x=self.vis3D.coordinates_x,
-            y=self.vis3D.coordinates_y,
-            z=self.vis3D.depth)
+            # 3D 좌표 사이즈 설정
+            self.axisX = int(self.vis3D.frontCam_w[-1])
+            self.axisY = int(self.vis3D.sideCam_w[-1])
+            self.axisZ = float(self.vis3D.frontCam_h[-1])
+
+            self.load_3D_scatter(x=self.vis3D.coordinates_x,
+                                 y=self.vis3D.coordinates_y,
+                                 z=self.vis3D.depth)
+
+        except Exception as e:
+            print("[set_3D_scatter] \n", e)
+            pass
 
 
     def load_3D_scatter(self, x, y, z):
-        numData = len(x)
-        self.pos = np.empty((numData, 3))
-        self.size = np.empty((numData))
-        self.color = np.empty((numData, 4))
-        for i in range(numData):
-            # Real(3D 시각화 좌표) to OpenGL(3D 시각화 좌표)
-            self.pos[i] = (self.axisX - z[i],
-                           x[i],
-                           self.axisZ - y[i])
-            self.size[i] = 10
-            self.color[i] = (0.0, 1.0, 0.0, 1.0)
+        try:
+            numData = len(x)
+            self.pos = np.empty((numData, 3))
+            self.scatter_size = np.empty((numData))
+            self.scatter_color = np.empty((numData, 4))
+            for i in range(numData):
+                # Real(3D 시각화 좌표) to OpenGL(3D 시각화 좌표)
+                self.pos[i] = (self.axisX - z[i],
+                               x[i],
+                               self.axisZ - y[i])
+                self.scatter_size[i] = 5
+                self.scatter_color[i] = (0.0, 1.0, 0.0, 1.0)
 
-        self.update_3D_scatter(pos=self.pos,
-                               size=self.size,
-                               color=self.color)
+            self.update_3D_scatter(pos=self.pos,
+                                   size=self.scatter_size,
+                                   color=self.scatter_color)
+
+        except Exception as e:
+            print("[load_3D_scatter] \n", e)
+            pass
 
 
     def update_3D_scatter(self, pos, size, color):
-        del self.graphicsView.items[2:]
-        gsp = gl.GLScatterPlotItem(pos=pos, size=size, color=color, pxMode=False)
-        gsp.scale(x=self.mapScale['x'],
-                  y=self.mapScale['y'],
-                  z=self.mapScale['z'])
-        gsp.translate(dx=self.mapTranslate['dx'],
-                      dy=self.mapTranslate['dy'],
-                      dz=self.mapTranslate['dz'])
-        self.graphicsView.addItem(gsp)
+        try:
+            del self.graphicsView.items[2:]
+            gsp = gl.GLScatterPlotItem(pos=pos, size=size, color=color, pxMode=False)
+            gsp.scale(x=self.mapScale['x'],
+                      y=self.mapScale['y'],
+                      z=self.mapScale['z'])
+            gsp.translate(dx=self.mapTranslate['dx'],
+                          dy=self.mapTranslate['dy'],
+                          dz=self.mapTranslate['dz'])
+            self.graphicsView.addItem(gsp)
+
+        except Exception as e:
+            print("[update_3D_scatter] \n", e)
+            pass
+
+
+    def load_3D_line(self, x, y, z):
+        try:
+            numData = len(x)
+            self.pos = np.empty((numData, 3))
+            self.line_size = 2
+            self.line_color = (0.0, 1.0, 0.0, 1.0)
+            for i in range(numData):
+                # Real(3D 시각화 좌표) to OpenGL(3D 시각화 좌표)
+                self.pos[i] = (self.axisX - z[i],
+                               x[i],
+                               self.axisZ - y[i])
+            self.update_3D_line(pos=self.pos,
+                                width=self.line_size,
+                                color=self.line_color)
+
+        except Exception as e:
+            print("[load_3D_line] \n", e)
+            pass
+
+
+    def update_3D_line(self, pos, width, color):
+        try:
+            del self.graphicsView.items[2:]
+            gsp = gl.GLLinePlotItem(pos=pos, width=width, color=color, antialias=True)
+            gsp.scale(x=self.mapScale['x'],
+                      y=self.mapScale['y'],
+                      z=self.mapScale['z'])
+            gsp.translate(dx=self.mapTranslate['dx'],
+                          dy=self.mapTranslate['dy'],
+                          dz=self.mapTranslate['dz'])
+            self.graphicsView.addItem(gsp)
+
+        except Exception as e:
+            print("[update_3D_line] \n", e)
+            pass
+
+
+    def apply_scatter(self):
+        # Use scatter plot
+        try:
+            del self.graphicsView.items[2:]
+            self.update_3D_scatter(pos=self.pos,
+                                   size=self.scatter_size,
+                                   color=self.scatter_color)
+            self.smooth_mode = 'scatter'
+
+        except Exception as e:
+            print("[apply_scatter] \n", e)
+            pass
+
+
+    def apply_line(self):
+        # Use line plot
+        try:
+            del self.graphicsView.items[2:]
+            self.line_size = 2
+            self.line_color = (0.0, 1.0, 0.0, 1.0)
+            self.update_3D_line(pos=self.pos,
+                                width=self.line_size,
+                                color=self.line_color)
+            self.smooth_mode = 'line'
+
+        except Exception as e:
+            print("[apply_line] \n", e)
+            pass
+
+
+    def apply_reset(self):
+        try:
+            if self.smooth_mode == 'scatter':
+                self.load_3D_scatter(x=self.vis3D.coordinates_x,
+                                     y=self.vis3D.coordinates_y,
+                                     z=self.vis3D.depth)
+            elif self.smooth_mode == 'line':
+                self.load_3D_line(x=self.vis3D.coordinates_x,
+                                  y=self.vis3D.coordinates_y,
+                                  z=self.vis3D.depth)
+            self.set_data_table(coordinates_x=self.vis3D.coordinates_x,
+                                coordinates_y = self.vis3D.coordinates_y,
+                                depth=self.vis3D.depth,
+                                speed=self.vis3D.speed,
+                                timestamp=self.vis3D.timestamp,
+                                frontCam_w=self.vis3D.frontCam_w,
+                                frontCam_h=self.vis3D.frontCam_h,
+                                sideCam_w=self.vis3D.sideCam_w,
+                                sideCam_h=self.vis3D.sideCam_h)
+
+        except Exception as e:
+            print("[apply_reset] \n", e)
+            pass
 
 
     def load_csv_file(self):
@@ -930,7 +1042,15 @@ class MyWindow(QMainWindow, form_class):
             fileFormat = dataName.split('.')[-1]
             if fileFormat == 'csv':
                 self.set_3D_scatter(dataPath[0])
-                self.set_data_table()
+                self.set_data_table(coordinates_x=self.vis3D.coordinates_x,
+                                    coordinates_y = self.vis3D.coordinates_y,
+                                    depth=self.vis3D.depth,
+                                    speed=self.vis3D.speed,
+                                    timestamp=self.vis3D.timestamp,
+                                    frontCam_w=self.vis3D.frontCam_w,
+                                    frontCam_h=self.vis3D.frontCam_h,
+                                    sideCam_w=self.vis3D.sideCam_w,
+                                    sideCam_h=self.vis3D.sideCam_h)
             elif fileFormat == '':
                 pass
             else:
@@ -942,11 +1062,8 @@ class MyWindow(QMainWindow, form_class):
 
 
     def load_section(self, dataPath):
-        '''
-            특정 구간(시간)에 대한 관상어 3D 이동패턴 시각화
-        '''
+        # 특정 구간(시간)에 대한 관상어 3D 이동패턴 시각화
         try:
-            # 예외 처리
             if self.label_3D_data_path.text() == '  ' + 'Choose data':
                 QMessageBox.about(None, "Error", "Please select a csv file.")
             elif self.label_3D_data_path.text() == '  ':
@@ -958,37 +1075,59 @@ class MyWindow(QMainWindow, form_class):
             end_time = self.dateTimeEdit_end.dateTime()
             end_time = str(end_time.toString('yy.MM.dd.hh.mm.ss'))
 
-            list_x, list_y, list_depth = self.vis3D.set_time_zone(
+            list_x, list_y, list_depth, list_speed, list_timestamp, \
+            list_frontW, list_frontH, list_sideW, list_sideH = self.vis3D.set_time_zone(
                 start_time=start_time,
                 end_time=end_time,
-                timestamp=self.vis3D.timestamp,
                 x=self.vis3D.coordinates_x,
                 y=self.vis3D.coordinates_y,
-                depth=self.vis3D.depth)
+                depth=self.vis3D.depth,
+                speed=self.vis3D.speed,
+                timestamp=self.vis3D.timestamp,
+                frontW=self.vis3D.frontCam_w,
+                frontH=self.vis3D.frontCam_h,
+                sideW=self.vis3D.sideCam_w,
+                sideH=self.vis3D.sideCam_h)
 
-            self.load_3D_scatter(
-                x=list_x,
-                y=list_y,
-                z=list_depth)
+            if self.smooth_mode == 'scatter':
+                self.load_3D_scatter(x=list_x,
+                                     y=list_y,
+                                     z=list_depth)
+            elif self.smooth_mode == 'line':
+                self.load_3D_line(x=list_x,
+                                  y=list_y,
+                                  z=list_depth)
+
+            self.set_data_table(coordinates_x=list_x,
+                                coordinates_y = list_y,
+                                depth=list_depth,
+                                speed=list_speed,
+                                timestamp=list_timestamp,
+                                frontCam_w=list_frontW,
+                                frontCam_h=list_frontH,
+                                sideCam_w=list_sideW,
+                                sideCam_h=list_sideH)
 
         except Exception as e:
             print("[load_section] \n", e)
+            QMessageBox.about(None, "Error", "Empty data exists.\n"
+                                             "Please select another time zone.")
             pass
 
 
-    def set_data_table(self):
+    def set_data_table(self,
+                       coordinates_x,
+                       coordinates_y,
+                       depth,
+                       speed,
+                       timestamp,
+                       frontCam_w,
+                       frontCam_h,
+                       sideCam_w,
+                       sideCam_h):
         column_headers = ['x\n(frontW)', 'y\n(frontH)', 'z\n(sideW)',
                           'speed\n(mm/s)', 'timestamp\n(y.M.d.h.m.s)',
                           'frontCam_w', 'frontCam_h', 'sideCam_w', 'sideCam_h']
-        coordinates_x = self.vis3D.coordinates_x
-        coordinates_y = self.vis3D.coordinates_y
-        depth = self.vis3D.depth
-        speed = self.vis3D.speed
-        timestamp = self.vis3D.timestamp
-        frontCam_w = self.vis3D.frontCam_w
-        frontCam_h = self.vis3D.frontCam_h
-        sideCam_w = self.vis3D.sideCam_w
-        sideCam_h = self.vis3D.sideCam_h
 
         self.tableWidget_dataList.setRowCount(len(coordinates_x))
         self.tableWidget_dataList.setColumnCount(len(column_headers))
@@ -1014,17 +1153,18 @@ class MyWindow(QMainWindow, form_class):
         try:
             if col == 4:
                 # 이전에 클릭한 데이터는 원래의 색상 및 크기로 변경
-                self.size[self.check_row] = 10
-                self.color[self.check_row] = (0.0, 1.0, 0.0, 1.0)
+                self.scatter_size[self.check_row] = 10
+                self.scatter_color[self.check_row] = (0.0, 1.0, 0.0, 1.0)
                 # 클릭한 데이터 색상 및 크기 변경
-                self.size[row] = 30
-                self.color[row] = (0.0, 0.0, 1.0, 1.0)
+                self.scatter_size[row] = 30
+                self.scatter_color[row] = (0.0, 0.0, 1.0, 1.0)
                 # row 인덱스 저장
                 self.check_row = row
 
                 self.update_3D_scatter(pos=self.pos,
-                                       size=self.size,
-                                       color=self.color)
+                                       size=self.scatter_size,
+                                       color=self.scatter_color)
+
         except Exception as e:
             print("[clicked_data] \n", e)
             pass
@@ -1035,18 +1175,25 @@ class MyWindow(QMainWindow, form_class):
         try:
             index = self.tableWidget_dataList.selectedIndexes()
             cell = set((idx.row(), idx.column()) for idx in index)
+            self._pos = []
             for i in cell:
                 row = i[0]
                 col = i[1]
                 # 타임스탬프 컬럼에서만 작동
                 if col == 4:
                     # 선택한 데이터 색상 및 크기 변경
-                    self.color[row] = (1.0, 0.0, 0.0, 1.0)
-                    self.size[row] = 10
+                    self.scatter_color[row] = (1.0, 0.0, 0.0, 1.0)
+                    self.scatter_size[row] = 10
 
-            self.update_3D_scatter(pos=self.pos,
-                                   size=self.size,
-                                   color=self.color)
+            if self.smooth_mode == 'scatter':
+                self.update_3D_scatter(pos=self.pos,
+                                       size=self.scatter_size,
+                                       color=self.scatter_color)
+            elif self.smooth_mode == 'line':
+                self.update_3D_line(pos=self.pos,
+                                    width=self.line_size,
+                                    color=self.line_color)
+
         except Exception as e:
             print("[selected_data] \n", e)
             pass
@@ -1055,10 +1202,19 @@ class MyWindow(QMainWindow, form_class):
     @pyqtSlot()
     def selected_data_reset(self):
         try:
-            self.load_3D_scatter(
-                x=self.vis3D.coordinates_x,
-                y=self.vis3D.coordinates_y,
-                z=self.vis3D.depth)
+            self.load_3D_scatter(x=self.vis3D.coordinates_x,
+                                 y=self.vis3D.coordinates_y,
+                                 z=self.vis3D.depth)
+            self.set_data_table(coordinates_x=self.vis3D.coordinates_x,
+                                coordinates_y=self.vis3D.coordinates_y,
+                                depth=self.vis3D.depth,
+                                speed=self.vis3D.speed,
+                                timestamp=self.vis3D.timestamp,
+                                frontCam_w=self.vis3D.frontCam_w,
+                                frontCam_h=self.vis3D.frontCam_h,
+                                sideCam_w=self.vis3D.sideCam_w,
+                                sideCam_h=self.vis3D.sideCam_h)
+
         except Exception as e:
             print("[selected_data_reset] \n", e)
             pass
@@ -1072,7 +1228,7 @@ class MyWindow(QMainWindow, form_class):
             filePath = dataPath[0]
             if filePath.split('.')[-1] == 'png':
                 filePath = filePath.split('.')[0]
-            self.graphicsView.grabFrameBuffer().save('{}.png'.format(filePath))
+                self.graphicsView.grabFrameBuffer().save('{}.png'.format(filePath))
 
         except Exception as e:
             print("[capture_vis] \n", e)

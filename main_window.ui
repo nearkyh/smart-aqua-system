@@ -873,6 +873,45 @@ p, li { white-space: pre-wrap; }
        <string>Capture</string>
       </property>
      </widget>
+     <widget class="QPushButton" name="btn_apply_line">
+      <property name="geometry">
+       <rect>
+        <x>260</x>
+        <y>550</y>
+        <width>71</width>
+        <height>31</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Line</string>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="btn_apply_scatter">
+      <property name="geometry">
+       <rect>
+        <x>340</x>
+        <y>550</y>
+        <width>71</width>
+        <height>31</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Scatter</string>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="btn_apply_reset">
+      <property name="geometry">
+       <rect>
+        <x>420</x>
+        <y>550</y>
+        <width>71</width>
+        <height>31</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Reset</string>
+      </property>
+     </widget>
     </widget>
    </widget>
   </widget>
