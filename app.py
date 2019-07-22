@@ -1153,10 +1153,10 @@ class MyWindow(QMainWindow, form_class):
         try:
             if col == 4:
                 # 이전에 클릭한 데이터는 원래의 색상 및 크기로 변경
-                self.scatter_size[self.check_row] = 10
+                self.scatter_size[self.check_row] = 5
                 self.scatter_color[self.check_row] = (0.0, 1.0, 0.0, 1.0)
                 # 클릭한 데이터 색상 및 크기 변경
-                self.scatter_size[row] = 30
+                self.scatter_size[row] = 15
                 self.scatter_color[row] = (0.0, 0.0, 1.0, 1.0)
                 # row 인덱스 저장
                 self.check_row = row
@@ -1224,7 +1224,7 @@ class MyWindow(QMainWindow, form_class):
         try:
             dataPath = QFileDialog.getSaveFileName(None,
                                                    caption='Capture image path',
-                                                   directory='./capture_img')
+                                                   directory='./capture_3D_img')
             filePath = dataPath[0]
             if filePath.split('.')[-1] == 'png':
                 filePath = filePath.split('.')[0]

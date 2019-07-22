@@ -16,9 +16,9 @@ class Visualization3D:
         self.sideCam_w = []
         self.sideCam_h = []
         # Pre-processing data
-        self._x = []
-        self._y = []
-        self._depth = []
+        self.pre_x = []
+        self.pre_y = []
+        self.pre_depth = []
 
     def read_data(self, data_path):
         prc = pd.read_csv(data_path)
@@ -35,7 +35,6 @@ class Visualization3D:
         self.pre_processing()
 
     def pre_processing(self):
-        pass
         # rate = []
         # for i in range(len(self.depth)):
         #     rate.append(self.depth[i] / self.sideCam_w[i])
@@ -53,38 +52,39 @@ class Visualization3D:
         # # depth_average = int(sum(depth_list) / len(depth_list))
         # print(x_average, y_average)
 
-        '''
         x_rate = 1/5
-        self._x = []
+        self.pre_x = []
         for i in range(len(self.depth)):
             if self.coordinates_x[i] > 325:
-                self._x.append(self.coordinates_x[i] + int(self.depth[i] * x_rate))
+                self.pre_x.append(self.coordinates_x[i] + int(self.depth[i] * x_rate))
             elif self.coordinates_x[i] < 315:
-                self._x.append(self.coordinates_x[i] - int(self.depth[i] * x_rate))
+                self.pre_x.append(self.coordinates_x[i] - int(self.depth[i] * x_rate))
             else:
-                self._x.append(self.coordinates_x[i])
+                self.pre_x.append(self.coordinates_x[i])
 
         y_rate = 1/6
-        self._y = []
+        self.pre_y = []
         for i in range(len(self.depth)):
             if self.coordinates_y[i] > 245:
-                self._y.append(self.coordinates_y[i] + int(self.depth[i] * y_rate))
+                self.pre_y.append(self.coordinates_y[i] + int(self.depth[i] * y_rate))
             elif self.coordinates_y[i] < 235:
-                self._y.append(self.coordinates_y[i] - int(self.depth[i] * y_rate))
+                self.pre_y.append(self.coordinates_y[i] - int(self.depth[i] * y_rate))
             else:
-                self._y.append(self.coordinates_y[i])
+                self.pre_y.append(self.coordinates_y[i])
 
         depth_rate = 1/5
-        self._depth = []
+        self.pre_depth = []
         for i in range(len(self.depth)):
             x = abs(self.coordinates_x[i]-self.frontCam_w[-1])
             if self.depth[i] > 325:
-                self._depth.append(self.depth[i] + int(x * depth_rate))
+                self.pre_depth.append(self.depth[i] + int(x * depth_rate))
             elif self.depth[i] < 315:
-                self._depth.append(self.depth[i] - int(x * depth_rate))
+                self.pre_depth.append(self.depth[i] - int(x * depth_rate))
             else:
-                self._depth.append(self.depth[i])
-        '''
+                self.pre_depth.append(self.depth[i])
+
+        pass
+
     def set_time_zone(self,
                       start_time,
                       end_time,
