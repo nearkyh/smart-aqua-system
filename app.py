@@ -15,6 +15,7 @@ from PyQt5 import uic
 
 import pyqtgraph as pg
 import pyqtgraph.opengl as gl
+import matplotlib.pyplot as plt
 
 from utils.object_detection import ObjectDetection
 from utils.visualization_3D import Visualization3D
@@ -41,6 +42,10 @@ class MyWindow(QMainWindow, form_class):
         self.graphicsView.setGeometry(QRect(260, 40, 500, 500))
         self.graphicsView.setObjectName("graphicsView")
 
+        # self.label.resize(400,400)
+        self.label_colormap.setPixmap(QPixmap(QPixmap('./images/corlormap_jet.png')))
+        self.label_colormap.show()
+
         # 3D Scatter 변수 초기화
         self.axisX = 640
         self.axisY = 640
@@ -50,12 +55,19 @@ class MyWindow(QMainWindow, form_class):
         self.mapTranslate = {'dx': -int(self.axisX / 2) + 5, 'dy': -int(self.axisY / 2) + 5, 'dz': 5}
         self.cameraPosition = self.axisX * 2.5
         self.init_3D_scatter()
+
         # 3D Scatter 입력 데이터 초기화
         self.pos = None
         self.scatter_size = None
         self.scatter_color = None
         self.line_size = None
         self.line_color = None
+
+        self.x_table = None
+        self.y_table = None
+        self.z_table = None
+        self.speed_table = None
+        self.timestamp_table = None
 
         # 타이머 생성
         self.timer = QTimer()
@@ -101,6 +113,8 @@ class MyWindow(QMainWindow, form_class):
         self.btn_apply_line.clicked.connect(self.apply_line)
         self.btn_apply_scatter.clicked.connect(self.apply_scatter)
         self.btn_apply_reset.clicked.connect(self.apply_reset)
+        # 데이터 분석 (Speed 데이터)
+        self.btn_speed_data.clicked.connect(self.analysis_speed)
 
         # 3D 시각화 이미지 캡쳐
         self.btn_capture.clicked.connect(self.capture_vis)
@@ -118,12 +132,14 @@ class MyWindow(QMainWindow, form_class):
         self.dateTimeEdit_end.setDateTime(QDateTime.currentDateTime())
 
         # 관상어 인식 모델 및 라벨, 개체수에 대한 변수 초기화
-        self.model = 'rfcn_resnet101_angelfish_40000'
+        # self.model = 'rfcn_resnet101_angelfish_40000'
+        self.model = 'rfcn_resnet101_aquarium_fish_v3_27828'
         self.label_model_path.setText("  " + self.model)
         # self.label_model_path.setFont(QFont('Arial', 10))
-        self.label = 'angelfish_label_map.pbtxt'
+        # self.label = 'angelfish_label_map.pbtxt'
+        self.label = 'aquarium_fish_v3_label_map.pbtxt'
         self.label_label_path.setText("  " + self.label)
-        self.num_classes = 1
+        self.num_classes = 5
         self.spinBox_num_class.setValue(self.num_classes)
         self.spinBox_num_class.valueChanged.connect(self.set_num_classes)
 
@@ -178,6 +194,9 @@ class MyWindow(QMainWindow, form_class):
             ret, leftFrame = self.leftCam.read()
             ret, rightFrame = self.rightCam.read()
 
+            leftFrame = cv2.resize(leftFrame, dsize=(640, 480), interpolation=cv2.INTER_AREA)
+            rightFrame = cv2.resize(rightFrame, dsize=(640, 480), interpolation=cv2.INTER_AREA)
+
             # Frame rate
             curTime = time()
             sec = curTime - self.prevTime
@@ -185,8 +204,8 @@ class MyWindow(QMainWindow, form_class):
             fps = "FPS %0.1f" % (1 / (sec))
 
             # Show text in upper left corner
-            self.frameRate.putText(frame=leftFrame, text='Front Camera ' + fps)
-            self.frameRate.putText(frame=rightFrame, text='Side Camera ' + fps)
+            self.frameRate.putText(frame=leftFrame, text='Cam1 ' + fps)
+            self.frameRate.putText(frame=rightFrame, text='Cam2 ' + fps)
 
             # RGB format
             leftFrame = cv2.cvtColor(leftFrame, cv2.COLOR_BGR2RGB)
@@ -224,247 +243,247 @@ class MyWindow(QMainWindow, form_class):
                 category_index=r_category_index,
                 point_buff=self.object_detection.rightCam_point_buff)
 
-            try:
-                '''
-                Method 1
-                    3D positions (x, y and depth) were assigned combining
-                    the horizontal coordinates of the left camera (coordinates_x and coordinates_y) and
-                    the vertical coordinate of the right camera (depth using x-axis)
-                    l_object_point[0]: coordinates_x
-                    l_object_point[1]: coordinates_y
-                    r_object_point[0]: depth
-                '''
-                timestamp = time()
-                dataValue = [
-                    (l_object_point[0],
-                     l_object_point[1],
-                     r_object_point[0],
-                     timestamp,
-                     self.lCamWidth,
-                     self.lCamHeight,
-                     self.rCamWidth,
-                     self.rCamHeight)
-                ]
-                # Save in the last 30minutes behavior pattern data
-                self.patternArr.append(dataValue)
-                self.patternArr = self.patternArr[-self.patternArr_size:]
-
-            # When it can not be detected even from one frame
-            except Exception as e:
-                print("[error code] not detected\n", e)
-                pass
-
-            # ============================================================================
-            #   1st pattern : If object stay on the edge of the screen for a long time
-            #   and abnormal behavior detection area
-            # ============================================================================
-            try:
-                # TODO: Try change data length of abnormal behavior point.
-                abnormal_behavior_size_x = 120
-                abnormal_behavior_size_y = 120
-                RangeOfABD = RangeOfAbnormalBehaviorDetection(
-                    leftFrame=leftFrame,
-                    rightFrame=rightFrame,
-                    range_x=abnormal_behavior_size_x,
-                    range_y=abnormal_behavior_size_y,
-                    leftCam_object_point=l_object_point,
-                    rightCam_object_point=r_object_point)
-
-            except Exception as e:
-                print("[error code] init RangeOfABD\n", e)
-                pass
-
-            try:
-                # Range of Abnormal Behavior Detection
-                RangeOfABD.line2()
-
-                pattern1st_Arr = self.patternArr
-                check_abnormal_behavior_list = []
-
-                # The front of the Smart-Aquarium
-                # Left & Upper
-                check_abnormal_behavior = self.ABDetection.pattern_1st(
-                    x1=0, x2=abnormal_behavior_size_x,
-                    y1=0, y2=abnormal_behavior_size_y,
-                    z1=0, z2=abnormal_behavior_size_x,
-                    patternArr_size=self.patternArr_size,
-                    patternArr=pattern1st_Arr)
-                check_abnormal_behavior_list.append(check_abnormal_behavior)
-
-                # Right & Upper
-                check_abnormal_behavior = self.ABDetection.pattern_1st(
-                    x1=self.lCamWidth - abnormal_behavior_size_x, x2=self.lCamWidth,
-                    y1=0, y2=abnormal_behavior_size_y,
-                    z1=0, z2=abnormal_behavior_size_x,
-                    patternArr_size=self.patternArr_size,
-                    patternArr=pattern1st_Arr)
-                check_abnormal_behavior_list.append(check_abnormal_behavior)
-
-                # Left & Bottom
-                check_abnormal_behavior = self.ABDetection.pattern_1st(
-                    x1=0, x2=abnormal_behavior_size_x,
-                    y1=self.lCamHeight - abnormal_behavior_size_y, y2=self.lCamHeight,
-                    z1=0, z2=abnormal_behavior_size_x,
-                    patternArr_size=self.patternArr_size,
-                    patternArr=pattern1st_Arr)
-                check_abnormal_behavior_list.append(check_abnormal_behavior)
-
-                # Right & Bottom
-                check_abnormal_behavior = self.ABDetection.pattern_1st(
-                    x1=self.lCamWidth - abnormal_behavior_size_x, x2=self.lCamWidth,
-                    y1=self.lCamHeight - abnormal_behavior_size_y, y2=self.lCamHeight,
-                    z1=0, z2=abnormal_behavior_size_x,
-                    patternArr_size=self.patternArr_size,
-                    patternArr=pattern1st_Arr)
-                check_abnormal_behavior_list.append(check_abnormal_behavior)
-
-                # The back of the Smart-Aquarium
-                # Left & Upper
-                check_abnormal_behavior = self.ABDetection.pattern_1st(
-                    x1=0, x2=abnormal_behavior_size_x,
-                    y1=0, y2=abnormal_behavior_size_y,
-                    z1=self.lCamWidth - abnormal_behavior_size_x, z2=self.lCamWidth,
-                    patternArr_size=self.patternArr_size,
-                    patternArr=pattern1st_Arr)
-                check_abnormal_behavior_list.append(check_abnormal_behavior)
-
-                # Right & Upper
-                check_abnormal_behavior = self.ABDetection.pattern_1st(
-                    x1=self.lCamWidth - abnormal_behavior_size_x, x2=self.lCamWidth,
-                    y1=0, y2=abnormal_behavior_size_y,
-                    z1=abnormal_behavior_size_x, z2=self.lCamWidth,
-                    patternArr_size=self.patternArr_size,
-                    patternArr=pattern1st_Arr)
-                check_abnormal_behavior_list.append(check_abnormal_behavior)
-
-                # Left & Bottom
-                check_abnormal_behavior = self.ABDetection.pattern_1st(
-                    x1=0, x2=abnormal_behavior_size_x,
-                    y1=self.lCamHeight - abnormal_behavior_size_y, y2=self.lCamHeight,
-                    z1=self.lCamWidth - abnormal_behavior_size_x, z2=self.lCamWidth,
-                    patternArr_size=self.patternArr_size,
-                    patternArr=pattern1st_Arr)
-                check_abnormal_behavior_list.append(check_abnormal_behavior)
-
-                # Right & Bottom
-                check_abnormal_behavior = self.ABDetection.pattern_1st(
-                    x1=self.lCamWidth - abnormal_behavior_size_x, x2=self.lCamWidth,
-                    y1=self.lCamHeight - abnormal_behavior_size_y, y2=self.lCamHeight,
-                    z1=self.lCamWidth - abnormal_behavior_size_x, z2=self.lCamWidth,
-                    patternArr_size=self.patternArr_size,
-                    patternArr=pattern1st_Arr)
-                check_abnormal_behavior_list.append(check_abnormal_behavior)
-
-                for i in check_abnormal_behavior_list:
-                    if i == 'Detect abnormal behavior':
-                        pattern1st_Arr.clear()
-                        self.ABDetection.display(
-                            num_pattern=1,
-                            leftFrame=leftFrame,
-                            rightFrame=rightFrame,
-                            leftCam_w=self.lCamWidth,
-                            leftCam_h=self.lCamHeight,
-                            rightCam_w=self.rCamWidth,
-                            rightCam_h=self.rCamHeight)
-                check_abnormal_behavior_list.clear()
-
-            # When it can not be detected even from one frame
-            except Exception as e:
-                print("[error code] 1st pattern\n", e)
-                # Range of Abnormal Behavior Detection
-                RangeOfABD.line()
-                pass
-
-            # ==================================================================
-            #   2st pattern : If the movement is noticeably slower or faster
-            # ==================================================================
-            try:
-                pattern2st_Arr = self.patternArr
-                for i in range(len(pattern2st_Arr)):
-                    '''
-                        pattern2st_Arr[i][0][0], coordinates_x
-                        pattern2st_Arr[i][0][1], coordinates_y
-                        pattern2st_Arr[i][0][2], depth
-                        pattern2st_Arr[i][0][3], timestamp
-                    '''
-                    lastData = len(pattern2st_Arr) - 1
-                    oneSecondPreviousData = lastData - int(float("{0:.1f}".format(1 / sec)))
-                    speed = self.ABDetection.speed_of_three_dimensional(
-                        resolution_x=self.lCamWidth,
-                        resolution_y=self.lCamHeight,
-                        resolution_z=self.rCamWidth,
-                        coordinates_x1=(pattern2st_Arr[oneSecondPreviousData][0])[0],
-                        coordinates_x2=(pattern2st_Arr[lastData][0])[0],
-                        coordinates_y1=(pattern2st_Arr[oneSecondPreviousData][0])[1],
-                        coordinates_y2=(pattern2st_Arr[lastData][0])[1],
-                        depth1=(pattern2st_Arr[oneSecondPreviousData][0])[2],
-                        depth2=(pattern2st_Arr[lastData][0])[2],
-                        time1=(pattern2st_Arr[oneSecondPreviousData][0])[3],
-                        time2=(pattern2st_Arr[lastData][0])[3])
-                    self.speed = speed
-                cv2.putText(leftFrame, '{0:.2f}mm/s'.format(speed), (l_x_max, l_y_max), cv2.FONT_HERSHEY_PLAIN, 1, (0, 255, 0))
-                cv2.putText(rightFrame, '{0:.2f}mm/s'.format(speed), (r_x_max, r_y_max), cv2.FONT_HERSHEY_PLAIN, 1, (0, 255, 0))
-
-                if self.countFrame == 0:
-                    check_abnormal_behavior = self.ABDetection.pattern_2st(
-                        speed=speed,
-                        queue_size_of_speed=self.queue_size_of_speed,
-                        queue_of_speed=self.queue_of_speed)
-                    if check_abnormal_behavior == 'Detect abnormal behavior':
-                        self.queue_of_speed.clear()
-                        self.ABDetection.display(
-                            num_pattern=2,
-                            leftFrame=leftFrame,
-                            rightFrame=rightFrame,
-                            leftCam_w=self.lCamWidth,
-                            leftCam_h=self.lCamHeight,
-                            rightCam_w=self.rCamWidth,
-                            rightCam_h=self.rCamHeight)
-
-            # When it can not be detected even from one frame
-            except Exception as e:
-                print("[error code] 2st pattern\n", e)
-                pass
-
-            # ================================================
-            #   3st pattern : If detect white spot disease
-            # ================================================
-            try:
-                leftCam_check_white_spot_disease = ''
-                rightCam_check_white_spot_disease = ''
-
-                if (l_x_min != None) and (l_x_max != None) and (l_x_min != None) and (l_y_max != None):
-                    cropLeft_object = leftFrame[l_y_min:l_y_max, l_x_min:l_x_max]
-                    h = l_y_max - l_y_min
-                    w = l_x_max - l_x_min
-                    resizeLeft = cv2.resize(cropLeft_object, (w * 2, h * 2))
-                    leftCam_check_white_spot_disease = self.ABDetection.pattern_3st(
-                        frame=resizeLeft,
-                        title='frontCam')
-
-                if (r_x_min != None) and (r_x_max != None) and (r_y_min != None) and (r_y_max != None):
-                    cropRight_object = rightFrame[r_y_min:r_y_max, r_x_min:r_x_max]
-                    h = r_y_max - r_y_min
-                    w = r_x_max - r_x_min
-                    resizeRight = cv2.resize(cropRight_object, (w * 2, h * 2))
-                    rightCam_check_white_spot_disease = self.ABDetection.pattern_3st(
-                        frame=resizeRight,
-                        title='sideCam')
-
-                if (leftCam_check_white_spot_disease == 'Detect white spot disease') or (rightCam_check_white_spot_disease == 'Detect white spot disease'):
-                    self.ABDetection.display(
-                        num_pattern=3,
-                        leftFrame=leftFrame,
-                        rightFrame=rightFrame,
-                        leftCam_w=self.lCamWidth,
-                        leftCam_h=self.lCamHeight,
-                        rightCam_w=self.rCamWidth,
-                        rightCam_h=self.rCamHeight)
-
-            # When it can not be detected even from one frame
-            except Exception as e:
-                print("[error code] 3st pattern\n", e)
-                pass
+            # try:
+            #     '''
+            #     Method 1
+            #         3D positions (x, y and depth) were assigned combining
+            #         the horizontal coordinates of the left camera (coordinates_x and coordinates_y) and
+            #         the vertical coordinate of the right camera (depth using x-axis)
+            #         l_object_point[0]: coordinates_x
+            #         l_object_point[1]: coordinates_y
+            #         r_object_point[0]: depth
+            #     '''
+            #     timestamp = time()
+            #     dataValue = [
+            #         (l_object_point[0],
+            #          l_object_point[1],
+            #          r_object_point[0],
+            #          timestamp,
+            #          self.lCamWidth,
+            #          self.lCamHeight,
+            #          self.rCamWidth,
+            #          self.rCamHeight)
+            #     ]
+            #     # Save in the last 30minutes behavior pattern data
+            #     self.patternArr.append(dataValue)
+            #     self.patternArr = self.patternArr[-self.patternArr_size:]
+            #
+            # # When it can not be detected even from one frame
+            # except Exception as e:
+            #     print("[error code] not detected\n", e)
+            #     pass
+            #
+            # # ============================================================================
+            # #   1st pattern : If object stay on the edge of the screen for a long time
+            # #   and abnormal behavior detection area
+            # # ============================================================================
+            # try:
+            #     # TODO: Try change data length of abnormal behavior point.
+            #     abnormal_behavior_size_x = 120
+            #     abnormal_behavior_size_y = 120
+            #     RangeOfABD = RangeOfAbnormalBehaviorDetection(
+            #         leftFrame=leftFrame,
+            #         rightFrame=rightFrame,
+            #         range_x=abnormal_behavior_size_x,
+            #         range_y=abnormal_behavior_size_y,
+            #         leftCam_object_point=l_object_point,
+            #         rightCam_object_point=r_object_point)
+            #
+            # except Exception as e:
+            #     print("[error code] init RangeOfABD\n", e)
+            #     pass
+            #
+            # try:
+            #     # Range of Abnormal Behavior Detection
+            #     RangeOfABD.line2()
+            #
+            #     pattern1st_Arr = self.patternArr
+            #     check_abnormal_behavior_list = []
+            #
+            #     # The front of the Smart-Aquarium
+            #     # Left & Upper
+            #     check_abnormal_behavior = self.ABDetection.pattern_1st(
+            #         x1=0, x2=abnormal_behavior_size_x,
+            #         y1=0, y2=abnormal_behavior_size_y,
+            #         z1=0, z2=abnormal_behavior_size_x,
+            #         patternArr_size=self.patternArr_size,
+            #         patternArr=pattern1st_Arr)
+            #     check_abnormal_behavior_list.append(check_abnormal_behavior)
+            #
+            #     # Right & Upper
+            #     check_abnormal_behavior = self.ABDetection.pattern_1st(
+            #         x1=self.lCamWidth - abnormal_behavior_size_x, x2=self.lCamWidth,
+            #         y1=0, y2=abnormal_behavior_size_y,
+            #         z1=0, z2=abnormal_behavior_size_x,
+            #         patternArr_size=self.patternArr_size,
+            #         patternArr=pattern1st_Arr)
+            #     check_abnormal_behavior_list.append(check_abnormal_behavior)
+            #
+            #     # Left & Bottom
+            #     check_abnormal_behavior = self.ABDetection.pattern_1st(
+            #         x1=0, x2=abnormal_behavior_size_x,
+            #         y1=self.lCamHeight - abnormal_behavior_size_y, y2=self.lCamHeight,
+            #         z1=0, z2=abnormal_behavior_size_x,
+            #         patternArr_size=self.patternArr_size,
+            #         patternArr=pattern1st_Arr)
+            #     check_abnormal_behavior_list.append(check_abnormal_behavior)
+            #
+            #     # Right & Bottom
+            #     check_abnormal_behavior = self.ABDetection.pattern_1st(
+            #         x1=self.lCamWidth - abnormal_behavior_size_x, x2=self.lCamWidth,
+            #         y1=self.lCamHeight - abnormal_behavior_size_y, y2=self.lCamHeight,
+            #         z1=0, z2=abnormal_behavior_size_x,
+            #         patternArr_size=self.patternArr_size,
+            #         patternArr=pattern1st_Arr)
+            #     check_abnormal_behavior_list.append(check_abnormal_behavior)
+            #
+            #     # The back of the Smart-Aquarium
+            #     # Left & Upper
+            #     check_abnormal_behavior = self.ABDetection.pattern_1st(
+            #         x1=0, x2=abnormal_behavior_size_x,
+            #         y1=0, y2=abnormal_behavior_size_y,
+            #         z1=self.lCamWidth - abnormal_behavior_size_x, z2=self.lCamWidth,
+            #         patternArr_size=self.patternArr_size,
+            #         patternArr=pattern1st_Arr)
+            #     check_abnormal_behavior_list.append(check_abnormal_behavior)
+            #
+            #     # Right & Upper
+            #     check_abnormal_behavior = self.ABDetection.pattern_1st(
+            #         x1=self.lCamWidth - abnormal_behavior_size_x, x2=self.lCamWidth,
+            #         y1=0, y2=abnormal_behavior_size_y,
+            #         z1=abnormal_behavior_size_x, z2=self.lCamWidth,
+            #         patternArr_size=self.patternArr_size,
+            #         patternArr=pattern1st_Arr)
+            #     check_abnormal_behavior_list.append(check_abnormal_behavior)
+            #
+            #     # Left & Bottom
+            #     check_abnormal_behavior = self.ABDetection.pattern_1st(
+            #         x1=0, x2=abnormal_behavior_size_x,
+            #         y1=self.lCamHeight - abnormal_behavior_size_y, y2=self.lCamHeight,
+            #         z1=self.lCamWidth - abnormal_behavior_size_x, z2=self.lCamWidth,
+            #         patternArr_size=self.patternArr_size,
+            #         patternArr=pattern1st_Arr)
+            #     check_abnormal_behavior_list.append(check_abnormal_behavior)
+            #
+            #     # Right & Bottom
+            #     check_abnormal_behavior = self.ABDetection.pattern_1st(
+            #         x1=self.lCamWidth - abnormal_behavior_size_x, x2=self.lCamWidth,
+            #         y1=self.lCamHeight - abnormal_behavior_size_y, y2=self.lCamHeight,
+            #         z1=self.lCamWidth - abnormal_behavior_size_x, z2=self.lCamWidth,
+            #         patternArr_size=self.patternArr_size,
+            #         patternArr=pattern1st_Arr)
+            #     check_abnormal_behavior_list.append(check_abnormal_behavior)
+            #
+            #     for i in check_abnormal_behavior_list:
+            #         if i == 'Detect abnormal behavior':
+            #             pattern1st_Arr.clear()
+            #             self.ABDetection.display(
+            #                 num_pattern=1,
+            #                 leftFrame=leftFrame,
+            #                 rightFrame=rightFrame,
+            #                 leftCam_w=self.lCamWidth,
+            #                 leftCam_h=self.lCamHeight,
+            #                 rightCam_w=self.rCamWidth,
+            #                 rightCam_h=self.rCamHeight)
+            #     check_abnormal_behavior_list.clear()
+            #
+            # # When it can not be detected even from one frame
+            # except Exception as e:
+            #     print("[error code] 1st pattern\n", e)
+            #     # Range of Abnormal Behavior Detection
+            #     RangeOfABD.line()
+            #     pass
+            #
+            # # ==================================================================
+            # #   2st pattern : If the movement is noticeably slower or faster
+            # # ==================================================================
+            # try:
+            #     pattern2st_Arr = self.patternArr
+            #     for i in range(len(pattern2st_Arr)):
+            #         '''
+            #             pattern2st_Arr[i][0][0], coordinates_x
+            #             pattern2st_Arr[i][0][1], coordinates_y
+            #             pattern2st_Arr[i][0][2], depth
+            #             pattern2st_Arr[i][0][3], timestamp
+            #         '''
+            #         lastData = len(pattern2st_Arr) - 1
+            #         oneSecondPreviousData = lastData - int(float("{0:.1f}".format(1 / sec)))
+            #         speed = self.ABDetection.speed_of_three_dimensional(
+            #             resolution_x=self.lCamWidth,
+            #             resolution_y=self.lCamHeight,
+            #             resolution_z=self.rCamWidth,
+            #             coordinates_x1=(pattern2st_Arr[oneSecondPreviousData][0])[0],
+            #             coordinates_x2=(pattern2st_Arr[lastData][0])[0],
+            #             coordinates_y1=(pattern2st_Arr[oneSecondPreviousData][0])[1],
+            #             coordinates_y2=(pattern2st_Arr[lastData][0])[1],
+            #             depth1=(pattern2st_Arr[oneSecondPreviousData][0])[2],
+            #             depth2=(pattern2st_Arr[lastData][0])[2],
+            #             time1=(pattern2st_Arr[oneSecondPreviousData][0])[3],
+            #             time2=(pattern2st_Arr[lastData][0])[3])
+            #         self.speed = speed
+            #     cv2.putText(leftFrame, '{0:.2f}mm/s'.format(speed), (l_x_max, l_y_max), cv2.FONT_HERSHEY_PLAIN, 1, (0, 255, 0))
+            #     cv2.putText(rightFrame, '{0:.2f}mm/s'.format(speed), (r_x_max, r_y_max), cv2.FONT_HERSHEY_PLAIN, 1, (0, 255, 0))
+            #
+            #     if self.countFrame == 0:
+            #         check_abnormal_behavior = self.ABDetection.pattern_2st(
+            #             speed=speed,
+            #             queue_size_of_speed=self.queue_size_of_speed,
+            #             queue_of_speed=self.queue_of_speed)
+            #         if check_abnormal_behavior == 'Detect abnormal behavior':
+            #             self.queue_of_speed.clear()
+            #             self.ABDetection.display(
+            #                 num_pattern=2,
+            #                 leftFrame=leftFrame,
+            #                 rightFrame=rightFrame,
+            #                 leftCam_w=self.lCamWidth,
+            #                 leftCam_h=self.lCamHeight,
+            #                 rightCam_w=self.rCamWidth,
+            #                 rightCam_h=self.rCamHeight)
+            #
+            # # When it can not be detected even from one frame
+            # except Exception as e:
+            #     print("[error code] 2st pattern\n", e)
+            #     pass
+            #
+            # # ================================================
+            # #   3st pattern : If detect white spot disease
+            # # ================================================
+            # try:
+            #     leftCam_check_white_spot_disease = ''
+            #     rightCam_check_white_spot_disease = ''
+            #
+            #     if (l_x_min != None) and (l_x_max != None) and (l_x_min != None) and (l_y_max != None):
+            #         cropLeft_object = leftFrame[l_y_min:l_y_max, l_x_min:l_x_max]
+            #         h = l_y_max - l_y_min
+            #         w = l_x_max - l_x_min
+            #         resizeLeft = cv2.resize(cropLeft_object, (w * 2, h * 2))
+            #         leftCam_check_white_spot_disease = self.ABDetection.pattern_3st(
+            #             frame=resizeLeft,
+            #             title='frontCam')
+            #
+            #     if (r_x_min != None) and (r_x_max != None) and (r_y_min != None) and (r_y_max != None):
+            #         cropRight_object = rightFrame[r_y_min:r_y_max, r_x_min:r_x_max]
+            #         h = r_y_max - r_y_min
+            #         w = r_x_max - r_x_min
+            #         resizeRight = cv2.resize(cropRight_object, (w * 2, h * 2))
+            #         rightCam_check_white_spot_disease = self.ABDetection.pattern_3st(
+            #             frame=resizeRight,
+            #             title='sideCam')
+            #
+            #     if (leftCam_check_white_spot_disease == 'Detect white spot disease') or (rightCam_check_white_spot_disease == 'Detect white spot disease'):
+            #         self.ABDetection.display(
+            #             num_pattern=3,
+            #             leftFrame=leftFrame,
+            #             rightFrame=rightFrame,
+            #             leftCam_w=self.lCamWidth,
+            #             leftCam_h=self.lCamHeight,
+            #             rightCam_w=self.rCamWidth,
+            #             rightCam_h=self.rCamHeight)
+            #
+            # # When it can not be detected even from one frame
+            # except Exception as e:
+            #     print("[error code] 3st pattern\n", e)
+            #     pass
 
             self.countFrame += 1
             if self.object_detection.model[:16] == 'ssd_inception_v2':
@@ -977,6 +996,32 @@ class MyWindow(QMainWindow, form_class):
             pass
 
 
+    def analysis_speed(self):
+        try:
+            del self.graphicsView.items[2:]
+            min_speed = min(self.vis3D.speed)
+            max_speed = max(self.vis3D.speed)
+            speed = self.speed_table
+            numData = len(speed)
+            cmap = plt.get_cmap('jet')
+            for i in range(numData):
+                self.scatter_color[i] = cmap((speed[i] - min_speed) / (max_speed - min_speed))
+                # if 0 <= speed[i] < 5:
+                #     self.scatter_color[i] = (0, 255, 0, 1.0)
+                # elif 5 <= speed[i] < 10:
+                #     self.scatter_color[i] = (0, 0, 255, 1.0)
+                # else:
+                #     self.scatter_color[i] = (255, 0, 0, 1.0)
+                # self.scatter_color[i] = pg.glColor((i, numData * 20))
+            self.update_3D_scatter(pos=self.pos,
+                                   size=self.scatter_size,
+                                   color=self.scatter_color)
+
+        except Exception as e:
+            print("[load_3D_scatter] \n", e)
+            pass
+
+
     def apply_scatter(self):
         # Use scatter plot
         try:
@@ -1147,6 +1192,12 @@ class MyWindow(QMainWindow, form_class):
         self.tableWidget_dataList.resizeColumnsToContents()
         self.tableWidget_dataList.resizeRowsToContents()
 
+        self.x_table = coordinates_x
+        self.y_table = coordinates_y
+        self.z_table = depth
+        self.speed_table = speed
+        self.timestamp_table = timestamp
+
 
     @pyqtSlot(int, int)
     def clicked_data(self, row, col):
@@ -1156,7 +1207,7 @@ class MyWindow(QMainWindow, form_class):
                 self.scatter_size[self.check_row] = 5
                 self.scatter_color[self.check_row] = (0.0, 1.0, 0.0, 1.0)
                 # 클릭한 데이터 색상 및 크기 변경
-                self.scatter_size[row] = 15
+                self.scatter_size[row] = 40
                 self.scatter_color[row] = (0.0, 0.0, 1.0, 1.0)
                 # row 인덱스 저장
                 self.check_row = row
@@ -1228,6 +1279,8 @@ class MyWindow(QMainWindow, form_class):
             filePath = dataPath[0]
             if filePath.split('.')[-1] == 'png':
                 filePath = filePath.split('.')[0]
+                self.graphicsView.grabFrameBuffer().save('{}.png'.format(filePath))
+            else:
                 self.graphicsView.grabFrameBuffer().save('{}.png'.format(filePath))
 
         except Exception as e:

@@ -141,7 +141,6 @@ class Visualization3D:
                 check_end_minute.append(time)
         start_index_minute = check_hour.index(check_start_minute[0])
         end_index_minute = check_hour.index(check_end_minute[-1])
-
         # Check the minute
         check_minute = []
         for i in range(len(check_hour)):
@@ -160,8 +159,7 @@ class Visualization3D:
                 check_end_second.append(time)
         start_index_second = check_minute.index(check_start_second[0])
         end_index_second = check_minute.index(check_end_second[-1])
-
-        # Check the minute
+        # Check the second
         check_second = []
         for i in range(len(check_minute)):
             check_second = check_minute[start_index_second : end_index_second]
@@ -176,16 +174,17 @@ class Visualization3D:
         list_frontH = []
         list_sideW = []
         list_sideH = []
-        for i in range(len(check_second)):
-            list_x.append(x[i])
-            list_y.append(y[i])
-            list_depth.append(depth[i])
-            list_speed.append(speed[i])
-            list_timestamp.append(timestamp[i])
-            list_frontW.append(frontW[i])
-            list_frontH.append(frontH[i])
-            list_sideW.append(sideW[i])
-            list_sideH.append(sideH[i])
+        for i in range(len(check_minute)):
+            idx = timestamp.index(check_minute[i])
+            list_x.append(x[idx])
+            list_y.append(y[idx])
+            list_depth.append(depth[idx])
+            list_speed.append(speed[idx])
+            list_timestamp.append(timestamp[idx])
+            list_frontW.append(frontW[idx])
+            list_frontH.append(frontH[idx])
+            list_sideW.append(sideW[idx])
+            list_sideH.append(sideH[idx])
                 
         return list_x, list_y, list_depth, list_speed, list_timestamp,\
                list_frontW, list_frontH, list_sideW, list_sideH
