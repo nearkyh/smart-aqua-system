@@ -52,8 +52,8 @@ def detector():
 @app.route('/streaming')
 def streaming():
     # Input video definition
-    # leftCam = 'rtsp://0.0.0.0:8091/test1.mp4'
-    input_leftCam = 'frontCam.avi'
+    input_leftCam = 'rtsp://192.168.0.12:8091/JetsonNano.mp4'
+    # input_leftCam = 'frontCam.avi'
     return Response(get_frame(input_leftCam),
                     mimetype='multipart/x-mixed-replace; boundary=frame')
 

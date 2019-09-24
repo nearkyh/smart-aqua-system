@@ -14,7 +14,7 @@ class FrameRate:
         self.prevTime = curTime
         fps = 1 / (sec)
 
-        return "FPS : %0.1f" % fps
+        return "FPS %0.1f" % fps
 
     def putText(self, frame, text):
         cv2.putText(frame, text, (10, 20), cv2.FONT_HERSHEY_PLAIN, 1, (0, 255, 0))
