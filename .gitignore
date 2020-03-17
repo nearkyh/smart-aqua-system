@@ -28,3 +28,5 @@ stereo_camera_calibration/capture/left/
 stereo_camera_calibration/capture/right/
 
 stereo_camera_calibration/capture_img/
+
+object_dtection/saved_models/3rd_7fish/
